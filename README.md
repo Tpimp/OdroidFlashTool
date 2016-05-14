@@ -10,7 +10,8 @@ A tool to help flash system images to ODROID SBC devices. The old tool only work
 ![Current Design](/docs/images/Odroid%20Flash%20Tool.png)
 
 #*Known Bugs and Current Development:*
-- [ ] *Add Initial Project* - Begin a new project and migrate source from old project (that will be re-used).
+- [x] *Add Initial Project* - Begin a new project and migrate source from old project (that will be re-used).
+- [ ] *Begin new user interface* - Using the mock-up begin generating QML components and UX
 - [ ] *Establish A Team* - the more Odroidians the better!
 
 #*Contributors:*
