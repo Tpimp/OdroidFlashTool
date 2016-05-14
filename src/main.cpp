@@ -28,7 +28,7 @@
 #include <winioctl.h>
 #include "disk.h"
 #include "mainwindow.h"
-
+#include "diskimager.h"
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -38,6 +38,10 @@ int main(int argc, char *argv[])
     QTranslator translator;
     translator.load(QString("diskimager_")+ locale);
     app.installTranslator(&translator);
+
+    DiskImager     dskimg;
+    dskimg.initializeDiskImager();
+
 
     MainWindow mainwindow;
     mainwindow.show();
