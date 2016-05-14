@@ -27,7 +27,6 @@
 #include <windows.h>
 #include <winioctl.h>
 #include "disk.h"
-#include "mainwindow.h"
 #include "diskimager.h"
 int main(int argc, char *argv[])
 {
@@ -43,7 +42,6 @@ int main(int argc, char *argv[])
     dskimg.initializeDiskImager();
 
 
-    MainWindow mainwindow;
-    mainwindow.show();
+
     return app.exec();
 }

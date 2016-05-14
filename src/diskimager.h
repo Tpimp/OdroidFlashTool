@@ -45,7 +45,9 @@ public slots:
     void  queryBootIni();
     void  requestWriteImage(QString image_path, QString write_path);
     void  requestReadImage(QString read_path, QString image_path);
-
+    void  generateMd5Hash(QString image_path);
+    //void    verifyImage();
+    void  onClosingApplication();
 private:
     QObject * mDiskManager;
     QJsonObject    mGUIDTable;

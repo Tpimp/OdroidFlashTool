@@ -23,7 +23,7 @@ DEPENDPATH += .
 INCLUDEPATH += .
 #CONFIG += release
 DEFINES -= UNICODE
-QT += widgets
+QT += qml quick widgets
 #DEFINES += QT_NO_CAST_FROM_ASCII
 VERSION = 0.9.5
 VERSTR = '\\"$${VERSION}\\"'
@@ -36,27 +36,21 @@ QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2009-2014 Windows ImageWriter Team"
 
 # Input
 HEADERS += disk.h\
-           mainwindow.h\
-           droppablelineedit.h \
     elapsedtimer.h \
     diskimager.h \
     windowsdiskmanager.h \
     linuxdiskmanager.h
 
-FORMS += mainwindow.ui
 
 SOURCES += disk.cpp\
            main.cpp\
-           mainwindow.cpp\
-           droppablelineedit.cpp \
     elapsedtimer.cpp \
     diskimager.cpp \
     windowsdiskmanager.cpp \
     linuxdiskmanager.cpp
 
-RESOURCES += gui_icons.qrc
 
-RC_FILE = DiskImager.rc
+#RC_FILE = DiskImager.rc
 
 TRANSLATIONS  = diskimager_en.ts\
                 diskimager_cn.ts\

@@ -1,15 +1,31 @@
 #ifndef WINDOWSDISKMANAGER_H
 #define WINDOWSDISKMANAGER_H
 
-#include <QObject>
-#include <QJsonObject>
+#ifndef WINVER
+#define WINVER 0x0601
+#endif
 
+#include <QtWidgets>
+#include <QCoreApplication>
+#include <QFileInfo>
+#include <QDirIterator>
+#include <cstdio>
+#include <cstdlib>
+#include <windows.h>
+#include <winioctl.h>
+#include <dbt.h>
+#include <shlobj.h>
+#include <iostream>
+#include <sstream>
+
+#include "disk.h"
+#include "md5.h"
 class WindowsDiskManager : public QObject
 {
     Q_OBJECT
 public:
     explicit WindowsDiskManager(QObject *parent = 0);
-
+    ~WindowsDiskManager();
 signals:
 
 public slots:
@@ -17,9 +33,11 @@ public slots:
     void  queryBootIni();
     void  requestWriteImage(QString image_path, QString write_path);
     void  requestReadImage(QString read_path, QString image_path);
-
+    void  verifyDiskImage();
 private:// windows specific members (windows handles,...)
-
+    HANDLE hVolume;
+    HANDLE hFile;
+    HANDLE hRawDisk;
 };
 
 #endif // WINDOWSDISKMANAGER_H
