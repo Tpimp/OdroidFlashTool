@@ -22,26 +22,41 @@
 #endif
 
 #include <QApplication>
-#include <cstdio>
-#include <cstdlib>
-#include <windows.h>
-#include <winioctl.h>
 #include "disk.h"
 #include "diskimager.h"
+#include "odroidflashmanager.h"
+#include <QCommandLineParser>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-    app.setApplicationDisplayName(VER);
+    QCommandLineParser parser;
+    // Add command line parsing rules
 
+    bool isGraphical(true);
     QString locale = QLocale::system().name();
     QTranslator translator;
     translator.load(QString("diskimager_")+ locale);
-    app.installTranslator(&translator);
 
-    DiskImager     dskimg;
-    dskimg.initializeDiskImager();
+    if(isGraphical)
+    {
+        QGuiApplication app(argc, argv);
+        app.setApplicationDisplayName("Odroid Flash Tool");
+        QQmlApplicationEngine graphical_engine(&app);
+        app.installTranslator(&translator);
+        DiskImager  *    dskimg = new DiskImager(&app);
+        dskimg->initializeDiskImager();
 
+        OdroidFlashManager * flashmanager = new OdroidFlashManager(dskimg,&app);
+        graphical_engine.rootContext()->setContextProperty("ODF",flashmanager);
+        graphical_engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+        return app.exec();
+    }
+    else
+    {
+        // Handle commandline system
 
+    }
+    return 0;
 
-    return app.exec();
 }

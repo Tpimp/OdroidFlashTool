@@ -35,9 +35,12 @@ public slots:
     void  requestReadImage(QString read_path, QString image_path);
     void  verifyDiskImage();
 private:// windows specific members (windows handles,...)
-    HANDLE hVolume;
-    HANDLE hFile;
-    HANDLE hRawDisk;
+    HANDLE mVolumeHandle;
+    HANDLE mFileHandle;
+    HANDLE mRawDiskHandle;
+    unsigned long long sectorsize;
+    int status;
+    char *sectorData;
 };
 
 #endif // WINDOWSDISKMANAGER_H

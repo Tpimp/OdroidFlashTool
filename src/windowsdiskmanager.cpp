@@ -3,57 +3,15 @@
 
 WindowsDiskManager::WindowsDiskManager(QObject *parent) : QObject(parent)
 {
-    //TODO: Convert "mainwindow" constructor into WindowsDiskManager constructor
-    /*
-    QStringList dirStack;
-    QString downloadPath = "";
-    setupUi(this);
-    elapsed_timer = new ElapsedTimer();
-    statusbar->addPermanentWidget(elapsed_timer);   // "addpermanent" puts it on the RHS of the statusbar
-    getLogicalDrives();
-    status = STATUS_IDLE;
-    progressbar->reset();
-    clipboard = QApplication::clipboard();
-    //bMd5Copy->setVisible(false);
-    statusbar->showMessage(tr("Waiting for a task."));
-    hVolume = INVALID_HANDLE_VALUE;
-    hFile = INVALID_HANDLE_VALUE;
-    hRawDisk = INVALID_HANDLE_VALUE;
-    if (QCoreApplication::arguments().count() > 1)
-    {
-        QString fileLocation = QApplication::arguments().at(1);
-        QFileInfo fileInfo(fileLocation);
-        leFile->setText(fileInfo.absoluteFilePath());
-    }
 
-    updateMd5CopyButton();
-    setReadWriteButtonState();
+    queryDiskLocations();
+    mVolumeHandle = INVALID_HANDLE_VALUE;
+    mFileHandle = INVALID_HANDLE_VALUE;
+    mRawDiskHandle = INVALID_HANDLE_VALUE;
+
     sectorData = NULL;
     sectorsize = 0ul;
 
-    myHomeDir = QDir::homePath();
-    if (myHomeDir == NULL){
-        myHomeDir = qgetenv("USERPROFILE");
-    }
-    downloadPath = qgetenv("DiskImagesDir");
-    QRegExp dir(tr("Downloads$"));
-    dirStack.append(myHomeDir);
-    while (!dirStack.isEmpty() && downloadPath.isEmpty())
-    {
-        QString curPath = dirStack.takeFirst();
-        QDir curDir = QDir(curPath);
-        QStringList dirList = curDir.entryList(QDir::AllDirs|QDir::NoDotAndDotDot, QDir::Time|QDir::Reversed);
-        for (int i = 0; i < dirList.size() && downloadPath.isEmpty(); ++i)
-        {
-            dirStack.append(curPath + "/" + dirList[i]);
-            if (dir.exactMatch(dirList[i]))
-                downloadPath = curPath + "/" + dirList[i];
-        }
-    }
-    dirStack.clear();
-    if (downloadPath.isEmpty())
-        downloadPath = QDir::currentPath();
-    myHomeDir = downloadPath;*/
 }
 
 void WindowsDiskManager::queryBootIni()
@@ -1006,30 +964,26 @@ void WindowsDiskManager::verifyDiskImage()
 WindowsDiskManager::~WindowsDiskManager()
 {
     // TODO: Convert mainwindow destructor to WindowsDiskManager dtor
-    /*if (hRawDisk != INVALID_HANDLE_VALUE)
+    if (mRawDiskHandle != INVALID_HANDLE_VALUE)
     {
-        CloseHandle(hRawDisk);
-        hRawDisk = INVALID_HANDLE_VALUE;
+        CloseHandle(mRawDiskHandle);
+        mRawDiskHandle = INVALID_HANDLE_VALUE;
     }
-    if (hFile != INVALID_HANDLE_VALUE)
+    if (mFileHandle != INVALID_HANDLE_VALUE)
     {
-        CloseHandle(hFile);
-        hFile = INVALID_HANDLE_VALUE;
+        CloseHandle(mFileHandle);
+        mFileHandle = INVALID_HANDLE_VALUE;
     }
-    if (hVolume != INVALID_HANDLE_VALUE)
+    if (mVolumeHandle != INVALID_HANDLE_VALUE)
     {
-        CloseHandle(hVolume);
-        hVolume = INVALID_HANDLE_VALUE;
+        CloseHandle(mVolumeHandle);
+        mVolumeHandle = INVALID_HANDLE_VALUE;
     }
     if (sectorData != NULL)
     {
         delete[] sectorData;
         sectorData = NULL;
     }
-    if (elapsed_timer != NULL)
-    {
-        delete elapsed_timer;
-        elapsed_timer = NULL;
-    }*/
+
 
 }

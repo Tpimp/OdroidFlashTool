@@ -18,28 +18,27 @@
 #                          https://launchpad.net/~image-writer-devs
 ###################################################################
 TEMPLATE = app
-TARGET = ../../Win32DiskImager
+TARGET = ../../OdroidFlashTool
 DEPENDPATH += .
 INCLUDEPATH += .
 #CONFIG += release
-DEFINES -= UNICODE
-QT += qml quick widgets
+QT += qml quick
 #DEFINES += QT_NO_CAST_FROM_ASCII
-VERSION = 0.9.5
+VERSION = 0.1.0
 VERSTR = '\\"$${VERSION}\\"'
 DEFINES += VER=\"$${VERSTR}\"
 DEFINES += WINVER=0x0601
 DEFINES += _WIN32_WINNT=0x0601
-QMAKE_TARGET_PRODUCT = "Win32 Image Writer"
-QMAKE_TARGET_DESCRIPTION = "Image Writer for Windows to write USB and SD images"
-QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2009-2014 Windows ImageWriter Team"
+QMAKE_TARGET_PRODUCT = "Odroid Flash Tool"
+QMAKE_TARGET_DESCRIPTION = "Writes image files to microSD and eMMC cards"
 
 # Input
 HEADERS += disk.h\
     elapsedtimer.h \
     diskimager.h \
     windowsdiskmanager.h \
-    linuxdiskmanager.h
+    linuxdiskmanager.h \
+    odroidflashmanager.h
 
 
 SOURCES += disk.cpp\
@@ -47,7 +46,8 @@ SOURCES += disk.cpp\
     elapsedtimer.cpp \
     diskimager.cpp \
     windowsdiskmanager.cpp \
-    linuxdiskmanager.cpp
+    linuxdiskmanager.cpp \
+    odroidflashmanager.cpp
 
 
 #RC_FILE = DiskImager.rc
@@ -56,3 +56,6 @@ TRANSLATIONS  = diskimager_en.ts\
                 diskimager_cn.ts\
                 diskimager_it.ts\
                 diskimager_pl.ts
+
+RESOURCES += \
+    qml.qrc
