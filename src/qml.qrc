@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
+        <file>TitleBar.qml</file>
+        <file>WindowControls.qml</file>
+        <file>Button.qml</file>
     </qresource>
 </RCC>
