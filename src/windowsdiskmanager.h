@@ -5,8 +5,7 @@
 #define WINVER 0x0601
 #endif
 
-#include <QtWidgets>
-#include <QCoreApplication>
+
 #include <QFileInfo>
 #include <QDirIterator>
 #include <cstdio>

@@ -21,13 +21,14 @@
 #define WINVER 0x0601
 #endif
 
-#include <QApplication>
+#include <QGuiApplication>
 #include "disk.h"
 #include "diskimager.h"
 #include "odroidflashmanager.h"
 #include <QCommandLineParser>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QTranslator>
 int main(int argc, char *argv[])
 {
     QCommandLineParser parser;

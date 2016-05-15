@@ -34,20 +34,22 @@ QMAKE_TARGET_DESCRIPTION = "Writes image files to microSD and eMMC cards"
 
 # Input
 HEADERS += disk.h\
-    elapsedtimer.h \
     diskimager.h \
     windowsdiskmanager.h \
     linuxdiskmanager.h \
-    odroidflashmanager.h
+    odroidflashmanager.h \
+    compressionmanager.h \
+    decompressionthread.h
 
 
 SOURCES += disk.cpp\
            main.cpp\
-    elapsedtimer.cpp \
     diskimager.cpp \
     windowsdiskmanager.cpp \
     linuxdiskmanager.cpp \
-    odroidflashmanager.cpp
+    odroidflashmanager.cpp \
+    compressionmanager.cpp \
+    decompressionthread.cpp
 
 
 #RC_FILE = DiskImager.rc

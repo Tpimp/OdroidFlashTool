@@ -4,3 +4,21 @@ OdroidFlashManager::OdroidFlashManager(DiskImager *dskimg, QObject *parent) : QO
 {
 
 }
+
+
+void OdroidFlashManager::startDecompression(QString archive_path)
+{
+
+}
+
+void OdroidFlashManager::cancelCurrentOperation()
+{
+
+}
+
+
+
+void OdroidFlashManager::startImageWrite(QString image_path)
+{
+
+}

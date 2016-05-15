@@ -24,7 +24,6 @@
 #define WINVER 0x0601
 #endif
 
-#include <QtWidgets>
 #include <QString>
 #include <cstdio>
 #include <cstdlib>
