@@ -4,5 +4,9 @@
         <file>TitleBar.qml</file>
         <file>WindowControls.qml</file>
         <file>Button.qml</file>
+        <file>FlashToolMain.qml</file>
+        <file>SlideSwitch.qml</file>
+        <file>RadioButton.qml</file>
+        <file>ImageFileView.qml</file>
     </qresource>
 </RCC>

@@ -5,12 +5,18 @@ Window {
     id:mainWindow
     visible: true
     height: 480
-    width: 800
+    width: 560
     maximumHeight: 480
-    maximumWidth: 800
-    minimumWidth: 800
+    maximumWidth: 560
+    minimumWidth: 560
     minimumHeight: 480
-    flags:( Qt.Window  |Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowStaysOnTopHint | Qt.WindowTitleHint)
+    color:"#434343"
+    flags:( Qt.Window  | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowStaysOnTopHint | Qt.WindowTitleHint)
+    FlashToolMain{
+        anchors.fill:parent
+        anchors.topMargin: 40
+        color:"#434343"
+    }
     TitleBar{
         id:titleBar
         anchors.top:parent.top
@@ -20,11 +26,13 @@ Window {
         color:"#38761d"
         windowTitle.text: "ODROID Flash Tool"
         windowTitle.color:"white"
-        border.width: 1
+        border.width: 2
+        radius:4
         windowControls.buttonColor:"#434343"
-        windowControls.hoverColor: "#38761d"
+        windowControls.hoverColor: "#00ff00"
         windowControls.onCloseClicked:{
             Qt.quit()
         }
     }
+
 }

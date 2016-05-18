@@ -4,10 +4,10 @@
 #include <QObject>
 #include <QJsonObject>
 /********************************************************************
- * DiskImager is the master object for the ODroid Flash Tool imaing
+ * DiskImager is the master object for the ODroid Flash Tool imaging
  * functions. Diskimager will allow the read and write of images to
- * and from a local drive. The system will contain #ifdef SYSTEM to
- * determine what methods to use (linux vs windows).
+ * and from a local drive. The class will contain #ifdef SYSTEM to
+ * determine what diskamanger to load (linux vs windows).
  *
  *******************************************************************/
 

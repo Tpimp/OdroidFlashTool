@@ -60,4 +60,5 @@ TRANSLATIONS  = diskimager_en.ts\
                 diskimager_pl.ts
 
 RESOURCES += \
-    qml.qrc
+    qml.qrc \
+    images.qrc
