@@ -16,10 +16,8 @@
  *  Copyright (C) 2009-2014 ImageWriter developers                    *
  *                          https://launchpad.net/~image-writer-devs  *
  **********************************************************************/
-
 #ifndef DISK_H
 #define DISK_H
-
 #ifndef WINVER
 #define WINVER 0x0601
 #endif

@@ -22,7 +22,6 @@
 #endif
 
 #include <QGuiApplication>
-#include "disk.h"
 #include "diskimager.h"
 #include "odroidflashmanager.h"
 #include <QCommandLineParser>

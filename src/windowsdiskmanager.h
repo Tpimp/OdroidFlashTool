@@ -1,6 +1,5 @@
 #ifndef WINDOWSDISKMANAGER_H
 #define WINDOWSDISKMANAGER_H
-
 #ifndef WINVER
 #define WINVER 0x0601
 #endif

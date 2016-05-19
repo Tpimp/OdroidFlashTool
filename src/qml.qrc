@@ -8,5 +8,6 @@
         <file>SlideSwitch.qml</file>
         <file>RadioButton.qml</file>
         <file>ImageFileView.qml</file>
+        <file>DeviceView.qml</file>
     </qresource>
 </RCC>

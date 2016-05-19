@@ -6,9 +6,6 @@ Rectangle{
     color:"transparent"
     border.color: "white"
     border.width: 2
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.top: parent.top
     anchors.margins: 8
     height:parent.height
     Text{
@@ -72,9 +69,9 @@ Rectangle{
     }
     Button{
         id:fileOpenButton
-        anchors.verticalCenter: filenameContainer.verticalCenter
+        anchors.bottom: filenameContainer.bottom
         anchors.left: filenameContainer.right
-        anchors.margins: 8
+        anchors.leftMargin:8
         height:filenameContainer.height * 1.8
         width:height
         radius:4
@@ -158,8 +155,8 @@ Rectangle{
     Button{
         id:guidButton
         anchors.left:assignRandomText.right
-        anchors.margins: 8
-        anchors.top:fileOpenButton.bottom
+        anchors.margins: 12
+        anchors.bottom:parent.bottom
         buttonText:Text{
             anchors.fill: parent
             text:"Set GUID Table"
@@ -172,7 +169,7 @@ Rectangle{
         color:"#6aa84f"
         border.color: "#b7b7b7"
         border.width: 1
-        radius:24
+        radius:16
         height:randomGuidFlag.height * 1.65
         width: parent.width *.28
         mouseArea.hoverEnabled: true

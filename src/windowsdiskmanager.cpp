@@ -1,6 +1,5 @@
 #include "windowsdiskmanager.h"
 
-
 WindowsDiskManager::WindowsDiskManager(QObject *parent) : QObject(parent)
 {
 
@@ -984,6 +983,4 @@ WindowsDiskManager::~WindowsDiskManager()
         delete[] sectorData;
         sectorData = NULL;
     }
-
-
 }
