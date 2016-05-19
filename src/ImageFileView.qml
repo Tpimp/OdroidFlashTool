@@ -118,7 +118,7 @@ Rectangle{
         anchors.verticalCenter: decompressFlag.verticalCenter
         anchors.left: decompressFlag.right
         anchors.margins: 8
-        color: "#00ff00"
+        color: "#11d011"
         font.pixelSize: 18
         font.bold: true
         horizontalAlignment: Text.AlignHCenter
@@ -145,7 +145,7 @@ Rectangle{
         anchors.verticalCenter: randomGuidFlag.verticalCenter
         anchors.left: randomGuidFlag.right
         anchors.margins: 8
-        color: "#00ff00"
+        color: "#11d011"
         font.pixelSize: 18
         font.bold: true
         horizontalAlignment: Text.AlignHCenter
@@ -169,7 +169,7 @@ Rectangle{
         color:"#6aa84f"
         border.color: "#b7b7b7"
         border.width: 1
-        radius:16
+        radius:12
         height:randomGuidFlag.height * 1.65
         width: parent.width *.28
         mouseArea.hoverEnabled: true

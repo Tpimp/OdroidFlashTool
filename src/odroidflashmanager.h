@@ -14,7 +14,7 @@ public:
     {
         return mDevicePath;
     }
-    enum ProcessID{DECOMPRESSING = 0,COMPRESSING, WRITING_IMAGE, READING_IMAGE, WRITING_GUID, MOUNTING};
+    enum ProcessID{DECOMPRESSING = 0,COMPRESSING, WRITING_IMAGE, READING_IMAGE, WRITING_GUID, MOUNTING, DOWNLOADING};
     Q_ENUM(ProcessID)
 
 signals:
@@ -22,6 +22,7 @@ signals:
     void deviceInvalid(QString device);
     void decompressionComplete(int percentage);
     void decompressionFailed(QString error);
+    void errorHappened(ProcessID id, int error_code, QString error_string);
 
 public slots:
     void startDecompression(QString archive_path);

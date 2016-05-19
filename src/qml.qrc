@@ -9,5 +9,6 @@
         <file>RadioButton.qml</file>
         <file>ImageFileView.qml</file>
         <file>DeviceView.qml</file>
+        <file>DropList.qml</file>
     </qresource>
 </RCC>

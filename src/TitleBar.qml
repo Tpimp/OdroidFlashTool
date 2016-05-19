@@ -36,33 +36,13 @@ Rectangle {
         openAnimation.start();
     }
 
-    Button{
-        id:settingsButton
-        anchors.left:parent.left
-        anchors.top:parent.top
-        height:34
-        width:height
-        anchors.margins: 3
-        border.width:2
-        radius:4
-        color:"#93c47d"
-        buttonImage:Image{
-            source:"images/settings.png"
-            anchors.fill: parent
-            fillMode:Image.PreserveAspectFit
-            smooth:true
-            anchors.margins:4
-            Component.onCompleted: parent = settingsButton;
-        }
-        mouseArea.onClicked: settingsOpen = !settingsOpen;
 
-    }
 
 
     MouseArea{
         property real mouseOldX:0
         property real mouseOldY:0
-        anchors.left: settingsButton.right
+        anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom:parent.bottom
         width:parent.width
@@ -86,7 +66,27 @@ Rectangle {
         width:150
         height:38
     }
+    Button{
+        id:settingsButton
+        anchors.left:parent.left
+        anchors.top:parent.top
+        height:34
+        width:height
+        anchors.margins: 3
+        border.width:2
+        radius:4
+        color:"#93c47d"
+        buttonImage:Image{
+            source:"images/settings.png"
+            anchors.fill: parent
+            fillMode:Image.PreserveAspectFit
+            smooth:true
+            anchors.margins:4
+            Component.onCompleted: parent = settingsButton;
+        }
+        mouseArea.onClicked: settingsOpen = !settingsOpen;
 
+    }
     NumberAnimation{
         id:openAnimation
         target:titleTop
