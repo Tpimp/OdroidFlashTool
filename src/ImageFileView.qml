@@ -2,6 +2,8 @@ import QtQuick 2.5
 
 Rectangle{
     property bool flashMode: true // Write == true, Read == false
+    property alias shouldCompress:compressFlag.checked
+    property alias shouldGUID: randomGuidFlag.checked
     id:imageBox
     color:"transparent"
     border.color: "white"
@@ -33,6 +35,7 @@ Rectangle{
         border.width: 2
         radius:8
         onValueChanged:{
+            flashMode = value;
             if(value)
             {
                 text.text = "WRITE MODE"
@@ -101,7 +104,7 @@ Rectangle{
         }
     }
     RadioButton{
-        id:decompressFlag
+        id:compressFlag
         color:"transparent"
         radius:4
         border.color: "#00ff00"
@@ -114,26 +117,27 @@ Rectangle{
         source:"/images/check.png"
     }
     Text{
-        id:decompressText
-        anchors.verticalCenter: decompressFlag.verticalCenter
-        anchors.left: decompressFlag.right
+        id:compressText
+        anchors.verticalCenter: compressFlag.verticalCenter
+        anchors.left: compressFlag.right
         anchors.margins: 8
         color: "#11d011"
         font.pixelSize: 18
         font.bold: true
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-        text:"Decompress<br>Before Flash"
+        text:flashMode ? "Decompress<br>Before Flash":"Compress<br>After Read"
     }
 
     RadioButton{
         id:randomGuidFlag
         color:"transparent"
         radius:4
+        visible:flashMode
         border.color: "#00ff00"
         border.width: 2
-        anchors.left:decompressText.right
-        anchors.verticalCenter:decompressFlag.verticalCenter
+        anchors.left:compressText.right
+        anchors.verticalCenter:compressText.verticalCenter
         anchors.margins: 20
         width:30
         height:30
@@ -145,6 +149,7 @@ Rectangle{
         anchors.verticalCenter: randomGuidFlag.verticalCenter
         anchors.left: randomGuidFlag.right
         anchors.margins: 8
+        visible:flashMode
         color: "#11d011"
         font.pixelSize: 18
         font.bold: true
@@ -154,6 +159,7 @@ Rectangle{
     }
     Button{
         id:guidButton
+        visible:flashMode
         anchors.left:assignRandomText.right
         anchors.margins: 12
         anchors.bottom:parent.bottom

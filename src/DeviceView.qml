@@ -7,9 +7,25 @@ Rectangle {
     border.width: 2
     anchors.margins: 8
     height:parent.height
+    property alias  verifyAfter:verifyFlag.checked
+    function setWriteMode()
+    {
+        verifyText.text = "Verify<br>After Flash";
+        displayDrop.visible = true;
+        displayText.visible = true;
+        configureBoot.visible = true;
+    }
+    function setReadMode()
+    {
+        verifyText.text = "Verify<br>After Read";
+        displayDrop.visible = false;
+        displayText.visible = false;
+        configureBoot.visible = false;
+    }
+
     Button{
         id:configureBoot
-        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.right:parent.right
         anchors.margins: 8
         anchors.bottom:parent.bottom
         buttonText:Text{
@@ -41,6 +57,7 @@ Rectangle {
             }
         }
     }
+
     Text{
         id:deviceText
         anchors.left:parent.left
@@ -52,6 +69,31 @@ Rectangle {
         font.pixelSize: 25
         font.bold: true
         color:"white"
+    }
+    RadioButton{
+        id:verifyFlag
+        color:"transparent"
+        radius:4
+        border.color: "#00ff00"
+        border.width: 2
+        anchors.left:parent.left
+        anchors.bottom:parent.bottom
+        anchors.margins: 12
+        width:30
+        height:30
+        source:"/images/check.png"
+    }
+    Text{
+        id:verifyText
+        anchors.verticalCenter: verifyFlag.verticalCenter
+        anchors.left: verifyFlag.right
+        anchors.margins: 8
+        color: "#11d011"
+        font.pixelSize: 18
+        font.bold: true
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        text:"Verify<br>After Flash"
     }
     DropList{
         id:driveDrop

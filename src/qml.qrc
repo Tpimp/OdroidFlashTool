@@ -10,5 +10,6 @@
         <file>ImageFileView.qml</file>
         <file>DeviceView.qml</file>
         <file>DropList.qml</file>
+        <file>ProgressBar.qml</file>
     </qresource>
 </RCC>
