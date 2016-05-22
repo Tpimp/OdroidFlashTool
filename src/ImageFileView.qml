@@ -4,6 +4,8 @@ Rectangle{
     property bool flashMode: true // Write == true, Read == false
     property alias shouldCompress:compressFlag.checked
     property alias shouldGUID: randomGuidFlag.checked
+    signal fileBrowserOpen()
+    property alias filePath:inputFilePath.text
     id:imageBox
     color:"transparent"
     border.color: "white"
@@ -61,13 +63,16 @@ Rectangle{
         anchors.topMargin: 12
         anchors.left:parent.left
         anchors.leftMargin: 24
+        clip:true
         TextInput{
+            id: inputFilePath
             anchors.fill: parent
             anchors.leftMargin: 4
+            anchors.rightMargin: 4
             horizontalAlignment: TextInput.AlignLeft
             verticalAlignment: TextInput.AlignVCenter
             text: ""
-            font.pixelSize: parent.height *.65
+            font.pixelSize: (width/text.length+ 8) < parent.height *.65 ? (width/text.length+ 8):parent.height *.65
         }
     }
     Button{
@@ -193,4 +198,7 @@ Rectangle{
         }
     }
 
+    Component.onCompleted: {
+        fileOpenButton.mouseArea.clicked.connect(imageBox.fileBrowserOpen);
+    }
 }

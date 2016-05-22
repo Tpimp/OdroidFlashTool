@@ -77,11 +77,15 @@ Rectangle {
                     value = false;
                 }
             }
+            onClicked:{ value = !value;topRect.forceActiveFocus()}
             hoverEnabled:true
             onHoveredChanged:
             {
                 if(dragArea.containsMouse)
+                {
+                    topRect.forceActiveFocus()
                     switchHandle.border.color = "#38761d"
+                }
                 else
                     switchHandle.border.color = "white"
             }

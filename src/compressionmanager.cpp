@@ -12,11 +12,11 @@ void CompressionManager::cleanUpDecompressor()
     mDecompressor = nullptr;
 }
 
-void CompressionManager::decompressFile(QString archive_path, QString decompress_path, quint64 memoryLimit)
+void CompressionManager::decompressFile(QString archive_path, QString decompress_path)
 {
     if(mDecompressor == nullptr)
     {
-        mDecompressor = new DecompressionThread(archive_path, decompress_path, mDecompressTempDir, memoryLimit);
+        mDecompressor = new DecompressionThread(archive_path, decompress_path, mDecompressTempDir);
         // make connections to decompression thread
         connect(mDecompressor, &DecompressionThread::finishedDecompression, this, &CompressionManager::cleanUpDecompressor);
         mDecompressor->start();

@@ -1,6 +1,7 @@
 import QtQuick 2.6
 
 Rectangle {
+    id:flashToolMain
     Text{
         id:progressTitle
         anchors.left:deviceView.left
@@ -95,6 +96,9 @@ Rectangle {
                 deviceView.setReadMode()
             }
         }
+        onFileBrowserOpen: {
+            fileBrowserLoader.active = true
+        }
     }
     DeviceView{
         id:deviceView
@@ -116,4 +120,29 @@ Rectangle {
     Component.onCompleted: {
         progressTimer.start();
     }
+    Loader{
+        id:fileBrowserLoader
+        anchors.fill: parent
+        sourceComponent:FileBrowser{
+            id:fileBrowser
+            visible:false
+            anchors.fill: parent
+            onFileSelected: {
+                imageView.filePath = file
+                fileBrowser.slideExit()
+            }
+
+           // onFolderChanged: fileBrowser2.folder = folder
+            Component.onCompleted:
+            {
+                fileBrowser.openFileBrowser(imageView.flashMode,"file:///c:/")
+            }
+            onExited:
+            {
+                fileBrowserLoader.active = false
+            }
+        }
+       active:false
+    }
+
 }

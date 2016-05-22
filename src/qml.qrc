@@ -11,5 +11,6 @@
         <file>DeviceView.qml</file>
         <file>DropList.qml</file>
         <file>ProgressBar.qml</file>
+        <file>FileBrowser.qml</file>
     </qresource>
 </RCC>

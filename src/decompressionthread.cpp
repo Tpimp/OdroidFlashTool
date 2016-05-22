@@ -1,7 +1,8 @@
 #include "decompressionthread.h"
 
-DecompressionThread::DecompressionThread(QString inFile, QString outFile, QString tempDir, quint64 memLimitSize) :
-    mInputFile(inFile),mOutputFile(outFile),mTempDir(tempDir),mMemLimitSize(memLimitSize),mCompressionStream(LZMA_STREAM_INIT)
+DecompressionThread::DecompressionThread(QString inFile, QString outFile, QString pwd) :
+    mInputFile(inFile),mOutputFile(outFile),mPWD(pwd)
 {
 
 }
+

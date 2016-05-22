@@ -13,7 +13,7 @@ public:
 signals:
 
 public slots:
-    void decompressFile(QString archive_path, QString decompress_path, quint64 memoryLimit);
+    void decompressFile(QString archive_path, QString decompress_path);
 private:
     DecompressionThread * mDecompressor = nullptr;
     QString               mDecompressTempDir;

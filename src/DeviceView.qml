@@ -102,8 +102,8 @@ Rectangle {
         anchors.left:parent.left
         anchors.leftMargin: 24
         color:"#93c47d"
-        width:parent.width * .26
-        height:36
+        width:parent.width * .4
+        height:40
         radius:6
         border.color: "white"
         border.width: 2
@@ -111,7 +111,7 @@ Rectangle {
         dropHandle.color: "#6aa84f"
         dropHandle.border.color:"#274e13"
         dropHandle.border.width: 2
-
+        dropText.font.pixelSize: 22
 
         Component.onCompleted: {
             driveDrop.addItemToList("Drive:Z","Z")

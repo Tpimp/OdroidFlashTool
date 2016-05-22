@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>CG_PlayZone</DisplayName>
+    <Description>Welcome to the new Alpha installer!</Description>
+    <Version>0.2.0</Version>
+    <ReleaseDate>2015-08-03</ReleaseDate>
+    <Name>com.cg.root.playzone</Name>
+    <Licenses>
+        <License name="Alpha License Agreement" file="license.txt" />
+    </Licenses>
+    <Default>script</Default>
+	<Script>installscript.qs</Script>
+	<UserInterfaces>
+        <UserInterface>shortcuts.ui</UserInterface>
+    </UserInterfaces>
+</Package>

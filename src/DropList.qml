@@ -86,6 +86,7 @@ Rectangle {
         anchors.fill: parent
         onClicked: {
             dropList.visible = !dropList.visible;
+            dropList.forceActiveFocus()
         }
     }
     Button{
@@ -106,11 +107,13 @@ Rectangle {
         }
         mouseArea.onClicked:{
             dropList.visible = !dropList.visible;
+            dropList.forceActiveFocus()
         }
         mouseArea.hoverEnabled: true
         mouseArea.onHoveredChanged: {
             if(mouseArea.containsMouse)
             {
+                dropTop.forceActiveFocus()
                 dropHandle.color = "#999999"
                 dropHandle.border.color = "#00ff00"
             }
@@ -168,6 +171,10 @@ Rectangle {
                     }
                 }
             }
+        }
+        onFocusChanged:  {
+            if(!focus)
+                dropList.visible = false
         }
     }
 }

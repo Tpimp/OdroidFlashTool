@@ -12,7 +12,15 @@ Window {
     minimumHeight: 480
     color:"#434343"
     flags:( Qt.Window  | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowStaysOnTopHint | Qt.WindowTitleHint)
+
+    MouseArea{
+        anchors.fill:parent
+        onClicked:{
+            flashToolMain.forceActiveFocus()
+        }
+    }
     FlashToolMain{
+        id:flashToolMain
         anchors.fill:parent
         anchors.topMargin: 40
         color:"#434343"
@@ -34,5 +42,4 @@ Window {
             Qt.quit()
         }
     }
-
 }

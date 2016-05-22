@@ -49,6 +49,7 @@ Rectangle{
         anchors.fill: parent
         onClicked: {
             checked = !checked;
+            buttonTop.forceActiveFocus()
         }
     }
 }
