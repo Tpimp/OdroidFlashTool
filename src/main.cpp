@@ -28,6 +28,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QTranslator>
+#include <QtQml>
 int main(int argc, char *argv[])
 {
     QCommandLineParser parser;
@@ -47,7 +48,11 @@ int main(int argc, char *argv[])
         DiskImager  *    dskimg = new DiskImager(&app);
         dskimg->initializeDiskImager();
 
-        OdroidFlashManager * flashmanager = new OdroidFlashManager(dskimg,&app);
+        QString pwd = app.applicationDirPath();
+        OdroidFlashManager * flashmanager = new OdroidFlashManager(dskimg,pwd,&app);
+
+        pwd += "/tmp";
+        flashmanager->setTemporaryPath(pwd);
         graphical_engine.rootContext()->setContextProperty("ODF",flashmanager);
         graphical_engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
         return app.exec();

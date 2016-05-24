@@ -1,7 +1,7 @@
 #include "decompressionthread.h"
 
-DecompressionThread::DecompressionThread(QString inFile, QString outFile, QString pwd) :
-    mInputFile(inFile),mOutputFile(outFile),mPWD(pwd)
+DecompressionThread::DecompressionThread(QString inFile, QString pwd, QString temporary) :
+    mInputFile(inFile),mPWD(pwd), mTemp(temporary)
 {
 
 }

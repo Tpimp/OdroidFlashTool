@@ -8,6 +8,7 @@ Rectangle {
     property alias    dropImage:dropImage
     property alias    dropText:displayText
     property alias    dropList:dropList
+    property alias    mouseArea:listMouseArea
     property ListModel dropModel:ListModel{}
     function addItemToList(name, data)
     {
@@ -69,8 +70,8 @@ Rectangle {
     function clearModel()
     {
         dropModel.clear()
-        currentText = ""
-        currentIndex = -1;
+        displayText.text = ""
+        dropList.currentIndex = -1;
         dropList.height = 0
     }
 
@@ -83,6 +84,7 @@ Rectangle {
         text:currentText
     }
     MouseArea{
+        id:listMouseArea
         anchors.fill: parent
         onClicked: {
             dropList.visible = !dropList.visible;

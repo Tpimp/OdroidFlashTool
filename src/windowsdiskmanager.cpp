@@ -2,8 +2,6 @@
 
 WindowsDiskManager::WindowsDiskManager(QObject *parent) : QObject(parent)
 {
-
-    queryDiskLocations();
     mVolumeHandle = INVALID_HANDLE_VALUE;
     mFileHandle = INVALID_HANDLE_VALUE;
     mRawDiskHandle = INVALID_HANDLE_VALUE;
@@ -18,113 +16,6 @@ void WindowsDiskManager::queryBootIni()
 
 }
 
-void WindowsDiskManager::queryDiskLocations()
-{
-    // TODO: Convert old widget based "GetLogicalDrives" logic. I think this can be done using Qt in a cross-platform method
-    // GetLogicalDrives returns 0 on failure, or a bitmask representing
-    // the drives available on the system (bit 0 = A:, bit 1 = B:, etc)
-   /* unsigned long driveMask = GetLogicalDrives();
-    int i = 0;
-    ULONG pID;
-
-    cboxDevice->clear();
-
-    while (driveMask != 0)
-    {
-        if (driveMask & 1)
-        {
-            // the "A" in drivename will get incremented by the # of bits
-            // we've shifted
-            char drivename[] = "\\\\.\\A:\\";
-            drivename[4] += i;
-            if (checkDriveType(drivename, &pID))
-            {
-                cboxDevice->addItem(QString("[%1:\\]").arg(drivename[4]), (qulonglong)pID);
-            }
-        }
-        driveMask >>= 1;
-        cboxDevice->setCurrentIndex(0);
-        ++i;
-    }*/
-
-    // MORE WINDOWS SPECIFIC query code from mainwindow
-    // support routine for winEvent - returns the drive letter for a given mask
-    //   taken from http://support.microsoft.com/kb/163503
-    /*char FirstDriveFromMask (ULONG unitmask)
-    {
-        char i;
-
-        for (i = 0; i < 26; ++i)
-        {
-            if (unitmask & 0x1)
-            {
-                break;
-            }
-            unitmask = unitmask >> 1;
-        }
-
-        return (i + 'A');
-    }*/
-
-    // register to receive notifications when USB devices are inserted or removed
-    // adapted from http://www.known-issues.net/qt/qt-detect-event-windows.html
-    //NATIVE EVENT STRUCTURE OF WINDOWS mainwindow handlers
-    /*MainWindow::nativeEvent(const QByteArray &type, void *vMsg, long *result)
-    Q_UNUSED(type);
-    MSG *msg = (MSG*)vMsg;
-    if(msg->message == WM_DEVICECHANGE)
-    {
-        PDEV_BROADCAST_HDR lpdb = (PDEV_BROADCAST_HDR)msg->lParam;
-        switch(msg->wParam)
-        {
-        case DBT_DEVICEARRIVAL:
-            if (lpdb -> dbch_devicetype == DBT_DEVTYP_VOLUME)
-            {
-                PDEV_BROADCAST_VOLUME lpdbv = (PDEV_BROADCAST_VOLUME)lpdb;
-                if(DBTF_NET)
-                {
-                    char ALET = FirstDriveFromMask(lpdbv->dbcv_unitmask);
-                    // add device to combo box (after sanity check that
-                    // it's not already there, which it shouldn't be)
-                    QString qs = QString("[%1:\\]").arg(ALET);
-                    if (cboxDevice->findText(qs) == -1)
-                    {
-                        ULONG pID;
-                        char longname[] = "\\\\.\\A:\\";
-                        longname[4] = ALET;
-                        // checkDriveType gets the physicalID
-                        if (checkDriveType(longname, &pID))
-                        {
-                            cboxDevice->addItem(qs, (qulonglong)pID);
-                            setReadWriteButtonState();
-                        }
-                    }
-                }
-            }
-            break;
-        case DBT_DEVICEREMOVECOMPLETE:
-            if (lpdb -> dbch_devicetype == DBT_DEVTYP_VOLUME)
-            {
-                PDEV_BROADCAST_VOLUME lpdbv = (PDEV_BROADCAST_VOLUME)lpdb;
-                if(DBTF_NET)
-                {
-                    char ALET = FirstDriveFromMask(lpdbv->dbcv_unitmask);
-                    //  find the device that was removed in the combo box,
-                    //  and remove it from there....
-                    //  "removeItem" ignores the request if the index is
-                    //  out of range, and findText returns -1 if the item isn't found.
-                    cboxDevice->removeItem(cboxDevice->findText(QString("[%1:\\]").arg(ALET)));
-                    setReadWriteButtonState();
-                }
-            }
-            break;
-        } // skip the rest
-    } // end of if msg->message
-    *result = 0; //get rid of obnoxious compiler warning
-    return false; // let qt handle the rest*/
-
-
-}
 
 void WindowsDiskManager::requestReadImage(QString read_path, QString image_path)
 {

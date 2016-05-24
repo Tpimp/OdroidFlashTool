@@ -72,10 +72,6 @@ void DiskImager::queryBootIni()
 
 }
 
-void DiskImager::queryDiskLocations()
-{
-
-}
 
 void DiskImager::requestReadImage(QString read_path, QString image_path)
 {

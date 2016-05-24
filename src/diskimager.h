@@ -41,7 +41,6 @@ public:
 signals:
 
 public slots:
-    void  queryDiskLocations();
     void  queryBootIni();
     void  requestWriteImage(QString image_path, QString write_path);
     void  requestReadImage(QString read_path, QString image_path);

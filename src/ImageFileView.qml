@@ -139,7 +139,7 @@ Rectangle{
         color:"transparent"
         radius:4
         visible:flashMode
-        border.color: "#00ff00"
+        border.color:enabled? "#00ff00":"lightgrey"
         border.width: 2
         anchors.left:compressText.right
         anchors.verticalCenter:compressText.verticalCenter
@@ -147,6 +147,7 @@ Rectangle{
         width:30
         height:30
         source:"/images/check.png"
+        enabled:false
 
     }
     Text{
@@ -155,11 +156,12 @@ Rectangle{
         anchors.left: randomGuidFlag.right
         anchors.margins: 8
         visible:flashMode
-        color: "#11d011"
+        color: enabled? "#11d011":"lightgrey"
         font.pixelSize: 18
         font.bold: true
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
+        enabled:false
         text:"Assign Random<br>GUIDs"
     }
     Button{
@@ -177,13 +179,14 @@ Rectangle{
             font.pixelSize: parent.height * .35
             Component.onCompleted: parent = guidButton
         }
-        color:"#6aa84f"
-        border.color: "#b7b7b7"
+        color: "#999999"
+        border.color: "#00ff00"
         border.width: 1
         radius:12
         height:randomGuidFlag.height * 1.65
         width: parent.width *.28
         mouseArea.hoverEnabled: true
+        enabled:false
         mouseArea.onHoveredChanged: {
             if(mouseArea.containsMouse)
             {

@@ -85,7 +85,15 @@ Rectangle {
             Component.onCompleted: parent = settingsButton;
         }
         mouseArea.onClicked: settingsOpen = !settingsOpen;
-
+        mouseArea.hoverEnabled: true
+        mouseArea.onEntered:
+        {
+            color = "#434343"
+        }
+        mouseArea.onExited:
+        {
+            color = "#93c47d";
+        }
     }
     NumberAnimation{
         id:openAnimation

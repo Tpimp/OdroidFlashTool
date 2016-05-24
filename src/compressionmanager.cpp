@@ -16,7 +16,7 @@ void CompressionManager::decompressFile(QString archive_path, QString decompress
 {
     if(mDecompressor == nullptr)
     {
-        mDecompressor = new DecompressionThread(archive_path, decompress_path, mDecompressTempDir);
+       // mDecompressor = new DecompressionThread(archive_path, decompress_path,mApplicationPath, mDecompressTempDir);
         // make connections to decompression thread
         connect(mDecompressor, &DecompressionThread::finishedDecompression, this, &CompressionManager::cleanUpDecompressor);
         mDecompressor->start();

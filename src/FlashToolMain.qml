@@ -1,7 +1,7 @@
 import QtQuick 2.6
-
 Rectangle {
     id:flashToolMain
+    property string processText:""
     Text{
         id:progressTitle
         anchors.left:deviceView.left
@@ -14,6 +14,23 @@ Rectangle {
         width: parent.width/5
         color:"white"
     }
+    Connections{
+        target:ODF
+        onDecompressionComplete:{
+            progressBar.value = percentage
+            progressText.text = processText + percentage.toString() + "%"
+        }
+
+        onProcessStarted:{
+            switch(id)
+            {
+                case 0: flashToolMain.processText = "Decompressing image: "; break;
+                case 1: flashToolMain.processText = "Compressing Image: "; break;
+                default:break;
+            }
+        }
+    }
+
     ProgressBar{
         id:progressBar
         anchors.left: progressTitle.right
@@ -28,7 +45,7 @@ Rectangle {
         innerColor:"#6aa84f"
         innerBorder.color:"#38761d"
         onProgressFinished: {
-            progressBar.value = 0;
+            flashButton.enabled = true;
             //progressTimer.stop()
         }
         Text{
@@ -75,6 +92,13 @@ Rectangle {
                 flashButton.border.color = "#999999"
             }
         }
+        mouseArea.onClicked: {
+            if(imageView.shouldCompress && imageView.filePath.length > 0)
+            {
+                ODF.startDecompression(imageView.filePath)
+                flashButton.enabled = false;
+            }
+        }
     }
     ImageFileView{
         id:imageView
@@ -108,27 +132,19 @@ Rectangle {
         anchors.top: imageView.bottom
     }
 
-    Timer{
-        id:progressTimer
-        running: false
-        interval:50
-        repeat:true
-        onTriggered: {
-            progressBar.value++;
-        }
-    }
-    Component.onCompleted: {
-        progressTimer.start();
-    }
     Loader{
         id:fileBrowserLoader
         anchors.fill: parent
         sourceComponent:FileBrowser{
             id:fileBrowser
             visible:false
-            anchors.fill: parent
+            width:flashToolMain.width
+            height:flashToolMain.height
+            x:parent.width
+            y:0
             onFileSelected: {
                 imageView.filePath = file
+                imageView.shouldCompress = isArchive
                 fileBrowser.slideExit()
             }
 
@@ -144,5 +160,4 @@ Rectangle {
         }
        active:false
     }
-
 }

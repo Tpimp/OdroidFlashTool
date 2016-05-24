@@ -37,13 +37,14 @@ Rectangle {
             font.pixelSize: parent.height * .35
             Component.onCompleted: parent = configureBoot
         }
-        color:"#6aa84f"
-        border.color: "#b7b7b7"
+        color: "#999999"
+        border.color: "#00ff00"
         border.width: 1
         radius:12
         height:42
         width: parent.width *.38
         mouseArea.hoverEnabled: true
+        enabled: false
         mouseArea.onHoveredChanged: {
             if(mouseArea.containsMouse)
             {
@@ -55,6 +56,18 @@ Rectangle {
                 configureBoot.color = "#6aa84f"
                 configureBoot.border.color = "#999999"
             }
+        }
+    }
+    Connections{
+        target:ODF
+        onFoundMountedDevice:
+        {
+            if(device === root_path)
+            {
+                driveDrop.addItemToList("Drive:"+" (" +device+")",root_path)
+            }
+            else
+                driveDrop.addItemToList(device +" (" +root_path+")" ,root_path)
         }
     }
 
@@ -102,7 +115,7 @@ Rectangle {
         anchors.left:parent.left
         anchors.leftMargin: 24
         color:"#93c47d"
-        width:parent.width * .4
+        width:parent.width * .42
         height:40
         radius:6
         border.color: "white"
@@ -111,21 +124,14 @@ Rectangle {
         dropHandle.color: "#6aa84f"
         dropHandle.border.color:"#274e13"
         dropHandle.border.width: 2
-        dropText.font.pixelSize: 22
-
-        Component.onCompleted: {
-            driveDrop.addItemToList("Drive:Z","Z")
-            driveDrop.addItemToList("Drive:D","D")
-            driveDrop.addItemToList("Drive:A","A")
-            driveDrop.addItemToList("Drive:Z","Z")
-            driveDrop.addItemToList("Drive:D","D")
-            driveDrop.addItemToList("Drive:A","A")
-            driveDrop.addItemToList("Drive:Z","Z")
-            driveDrop.addItemToList("Drive:D","D")
-            driveDrop.addItemToList("Drive:A","A")
-            driveDrop.addItemToList("Drive:Z","Z")
-            driveDrop.addItemToList("Drive:D","D")
-            driveDrop.addItemToList("Drive:A","A")
+        dropText.font.pixelSize: 18
+        dropHandle.mouseArea.onClicked: {
+            driveDrop.clearModel()
+            ODF.queryMountedDevices();
+        }
+        mouseArea.onClicked: {
+            driveDrop.clearModel()
+            ODF.queryMountedDevices();
         }
     }
 
@@ -155,7 +161,8 @@ Rectangle {
         border.color: "white"
         border.width: 2
         dropImage.source:"images/arrow_down.png"
-        dropHandle.color: "#6aa84f"
+        dropHandle.color: "lightgrey"
+        enabled:false
         dropHandle.border.color:"#274e13"
         dropHandle.border.width: 2
         dropText.font.pixelSize: 18

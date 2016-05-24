@@ -42,4 +42,7 @@ Window {
             Qt.quit()
         }
     }
+    Component.onCompleted: {
+        ODF.queryMountedDevices();
+    }
 }

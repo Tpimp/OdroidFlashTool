@@ -15,7 +15,8 @@ HEADERS += diskimager.h \
     linuxdiskmanager.h \
     odroidflashmanager.h \
     compressionmanager.h \
-    decompressionthread.h
+    decompressionthread.h \
+    compressionthread.h
 
 
 SOURCES += main.cpp\
@@ -23,7 +24,8 @@ SOURCES += main.cpp\
     linuxdiskmanager.cpp \
     odroidflashmanager.cpp \
     compressionmanager.cpp \
-    decompressionthread.cpp
+    decompressionthread.cpp \
+    compressionthread.cpp
 
 win32 {
     DEFINES += VER=\"$${VERSTR}\"
