@@ -11,7 +11,8 @@ A tool to help flash system images to ODROID SBC devices. The old tool only work
 
 #*Known Bugs and Current Development:*
 - [x] *Add Initial Project* - Begin a new project and migrate source from old project (that will be re-used).
-- [ ] *Begin new user interface* - Using the mock-up begin generating QML components and UX
+- [x] *Begin new user interface* - Using the mock-up begin generating QML components and UX
+- [ ] *Finish feature parity for Windows* - After compression is complete, finish feature parity to replace existing tool.
 - [ ] *Establish A Team* - the more Odroidians the better!
 
 #*Contributors:*
