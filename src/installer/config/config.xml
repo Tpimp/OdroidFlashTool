@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Installer>
-    <Name>Chess Games: Play-Zone</Name>
-    <Version>0.2.A</Version>
-    <Title>Chess Games Alpha Test Installer</Title>
-    <Publisher>Play Zone</Publisher>
-    <StartMenuDir>Chess Games</StartMenuDir>
-    <TargetDir>@rootDir@/Program Files (x86)/CG_Play-Zone</TargetDir>
+    <Name>Flash Tool</Name>
+    <Version>0.9.0</Version>
+    <Title>ODF 0.9.0 Beta Installers</Title>
+    <Publisher>Tpimp</Publisher>
+    <StartMenuDir>Odroid Flash Tool</StartMenuDir>
+    <TargetDir>@rootDir@/Program Files (x86)/ODROID Flash Tool</TargetDir>
 </Installer>

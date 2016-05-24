@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Package>
-    <DisplayName>CG_PlayZone</DisplayName>
-    <Description>Welcome to the new Alpha installer!</Description>
-    <Version>0.2.0</Version>
-    <ReleaseDate>2015-08-03</ReleaseDate>
-    <Name>com.cg.root.playzone</Name>
+    <DisplayName>Odroid Flash Tool</DisplayName>
+    <Description>A tool to help flash system images to ODROID SBC devices. The old tool only worked on windows and did not allow flexibility to use compressed archives as a source. I plan to add compression functions for reading and writing of the system image. Along the way a new intreface, support for Linux, and other features will be added.</Description>
+    <Version>0.5.0</Version>
+    <ReleaseDate>2016-06-03</ReleaseDate>
+    <Name>com.odroid.flashtool</Name>
     <Licenses>
         <License name="Alpha License Agreement" file="license.txt" />
     </Licenses>
