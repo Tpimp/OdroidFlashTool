@@ -25,7 +25,8 @@ public:
     explicit WindowsDiskManager(QObject *parent = 0);
     ~WindowsDiskManager();
 signals:
-
+    void  error(QString error);
+    void  writeCompleted(int percentage, QString write_speed);
 public slots:
     void  queryBootIni();
     void  requestWriteImage(QString image_path, QString write_path);
@@ -35,8 +36,8 @@ private:// windows specific members (windows handles,...)
     HANDLE mVolumeHandle;
     HANDLE mFileHandle;
     HANDLE mRawDiskHandle;
+    bool   mReadOnlyPartitions = false;
     unsigned long long sectorsize;
-    int status;
     char *sectorData;
 };
 

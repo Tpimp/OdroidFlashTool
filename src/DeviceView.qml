@@ -8,6 +8,11 @@ Rectangle {
     anchors.margins: 8
     height:parent.height
     property alias  verifyAfter:verifyFlag.checked
+    function getSelectedDevice()
+    {
+        return driveDrop.dropModel.get(driveDrop.currentIndex).itemData
+    }
+
     function setWriteMode()
     {
         verifyText.text = "Verify<br>After Flash";

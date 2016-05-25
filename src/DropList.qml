@@ -12,7 +12,7 @@ Rectangle {
     property ListModel dropModel:ListModel{}
     function addItemToList(name, data)
     {
-        dropModel.append({"name":name,"data":data});
+        dropModel.append({"name":name,"itemData":data});
         if(dropModel.count == 1)
         {
             displayText.text = name;

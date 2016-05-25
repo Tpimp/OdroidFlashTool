@@ -3,6 +3,12 @@
 
 #include <QObject>
 #include <QJsonObject>
+
+#ifdef Q_OS_WIN
+    #include "windowsdiskmanager.h"
+#else
+    #include "linuxdiskmanager.h"
+#endif
 /********************************************************************
  * DiskImager is the master object for the ODroid Flash Tool imaging
  * functions. Diskimager will allow the read and write of images to
@@ -39,6 +45,7 @@ public:
     Q_ENUM(ImagerState)
 
 signals:
+    void  errorOccured(ImagerState state,QString error);
 
 public slots:
     void  queryBootIni();
@@ -48,8 +55,15 @@ public slots:
     //void    verifyImage();
     void  onClosingApplication();
 private:
-    QObject * mDiskManager;
+#ifdef Q_OS_WIN
+    WindowsDiskManager * mDiskManager;
+#else
+    LinuxDiskManager  *  mDiskManager;
+#endif
     QJsonObject    mGUIDTable;
+    ImagerState    mState;
+private slots:
+    void  diskImageError(QString error);
 };
 
 #endif // DISKIMAGER_H

@@ -11,7 +11,7 @@ Window {
     minimumWidth: 560
     minimumHeight: 480
     color:"#434343"
-    flags:( Qt.Window  | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowStaysOnTopHint | Qt.WindowTitleHint)
+    flags:( Qt.Window  | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint |  Qt.WindowTitleHint)
 
     MouseArea{
         anchors.fill:parent
@@ -38,6 +38,10 @@ Window {
         radius:4
         windowControls.buttonColor:"#434343"
         windowControls.hoverColor: "#00ff00"
+        windowControls.onMinimizeClicked: {
+            mainWindow.showMinimized();
+        }
+
         windowControls.onCloseClicked:{
             Qt.quit()
         }

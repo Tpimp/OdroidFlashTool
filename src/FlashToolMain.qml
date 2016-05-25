@@ -113,7 +113,8 @@ Rectangle {
             {
                 if(imageView.shouldCompress && imageView.filePath.length > 0)
                 {
-                    ODF.startCompression(imageView.filePath)
+                    //ODF.startCompression(imageView.filePath)
+                    ODF.startReadImage(deviceView.getSelectedDevice() , imageView.filePath)
                     flashButton.enabled = false;
                 }
             }

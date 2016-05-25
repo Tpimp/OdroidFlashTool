@@ -1,11 +1,6 @@
 #include "diskimager.h"
 
 
-#ifdef Q_OS_WIN
-    #include "windowsdiskmanager.h"
-#else
-    #include "linuxdiskmanager.h"
-#endif
 DiskImager::DiskImager(QObject *parent) : QObject(parent), mGUIDTable()
 {
 
@@ -34,8 +29,10 @@ void DiskImager::initializeDiskImager()
 {
     #ifdef Q_OS_WIN
         mDiskManager = new WindowsDiskManager(this);
+        connect(mDiskManager, &WindowsDiskManager::error,this,&DiskImager::diskImageError);
     #else
         mDiskManager = new LinuxDiskManager(this);
+        connect(mDiskManager, &LinuxDiskManager::error,this,&DiskImager::diskImageError);
     #endif
 }
 
@@ -67,6 +64,11 @@ void DiskImager::onClosingApplication()
     }*/
 }
 
+void DiskImager::diskImageError(QString error)
+{
+
+}
+
 void DiskImager::queryBootIni()
 {
 
@@ -75,7 +77,10 @@ void DiskImager::queryBootIni()
 
 void DiskImager::requestReadImage(QString read_path, QString image_path)
 {
-
+    if(!mDiskManager)
+        return;
+    mState = READING_STATE;
+    mDiskManager->requestReadImage(read_path,image_path);
 }
 
 

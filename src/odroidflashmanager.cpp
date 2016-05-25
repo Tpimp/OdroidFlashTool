@@ -68,22 +68,32 @@ void OdroidFlashManager::decompressionFinished()
 void OdroidFlashManager::queryMountedDevices()
 {
     foreach (const QStorageInfo &storage, QStorageInfo::mountedVolumes()) {
-            if (storage.isValid() && storage.isReady() && !storage.isRoot()) {
-                if (!storage.isReadOnly()) {
-                    emit foundMountedDevice(storage.displayName(),storage.rootPath());
-                }
+        if (storage.isValid() && storage.isReady() && !storage.isRoot()) {
+            if (!storage.isReadOnly()) {
+                emit foundMountedDevice(storage.displayName(),storage.rootPath());
             }
         }
+    }
 }
 
 
 
 void OdroidFlashManager::startImageWrite(QString image_path)
 {
+    if(mDiskImager == nullptr)
+        return;
 
+    if(mRunningProcesses.length() > 0)
+        return; // something is running
 }
 
-void OdroidFlashManager::startReadImage(QString root_path)
+void OdroidFlashManager::startReadImage(QString root_path, QString image_path)
 {
+    if(mDiskImager == nullptr)
+        return;
 
+    if(mRunningProcesses.length() > 0)
+        return; // something is running
+
+    mDiskImager->requestReadImage(root_path,image_path);
 }

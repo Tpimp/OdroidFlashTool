@@ -42,7 +42,7 @@ public slots:
     void startDecompression(QString archive_path);
     void startCompression(QString image_path);
     void startImageWrite(QString image_path);
-    void startReadImage(QString root_path);
+    void startReadImage(QString root_path, QString image_path);
     void queryMountedDevices();
     void setTemporaryPath(QString path)
     {
