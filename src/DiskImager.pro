@@ -9,7 +9,6 @@ VERSTR = '\\"$${VERSION}\\"'
 
 QMAKE_TARGET_PRODUCT = "Odroid Flash Tool"
 QMAKE_TARGET_DESCRIPTION = "Writes image files to microSD and eMMC cards"
-INCLUDEPATH += "C:\Users\Christopher\Documents\GitHub\OdroidFlashTool\src\3rdparty\xz\include"
 # Input
 HEADERS += diskimager.h \
     linuxdiskmanager.h \

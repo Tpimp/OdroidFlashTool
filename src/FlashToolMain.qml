@@ -20,6 +20,10 @@ Rectangle {
             progressBar.value = percentage
             progressText.text = processText + percentage.toString() + "%"
         }
+        onCompressionCompleted:{
+            progressBar.value = percentage
+            progressText.text = processText + percentage.toString() + "%"
+        }
 
         onProcessStarted:{
             switch(id)
@@ -28,6 +32,10 @@ Rectangle {
                 case 1: flashToolMain.processText = "Compressing Image: "; break;
                 default:break;
             }
+        }
+        onProcessFinished:
+        {
+            flashButton.enabled = true;
         }
     }
 
@@ -93,10 +101,21 @@ Rectangle {
             }
         }
         mouseArea.onClicked: {
-            if(imageView.shouldCompress && imageView.filePath.length > 0)
+            if(imageView.flashMode) // write mode
             {
-                ODF.startDecompression(imageView.filePath)
-                flashButton.enabled = false;
+                if(imageView.shouldCompress && imageView.filePath.length > 0)
+                {
+                    ODF.startDecompression(imageView.filePath)
+                    flashButton.enabled = false;
+                }
+            }
+            else
+            {
+                if(imageView.shouldCompress && imageView.filePath.length > 0)
+                {
+                    ODF.startCompression(imageView.filePath)
+                    flashButton.enabled = false;
+                }
             }
         }
     }

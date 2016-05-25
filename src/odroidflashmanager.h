@@ -5,6 +5,7 @@
 #include "diskimager.h"
 #include <QList>
 #include "decompressionthread.h"
+#include "compressionthread.h"
 class OdroidFlashManager : public QObject
 {
     Q_OBJECT
@@ -33,6 +34,7 @@ signals:
     void errorHappened(OdroidFlashManager::ProcessID id, int error_code, QString error_string);
     void foundMountedDevice(QString device,QString root_path);
     void processStarted(OdroidFlashManager::ProcessID id);
+    void processFinished(OdroidFlashManager::ProcessID id);
     void temporaryPathChanged(QString path);
 
 public slots:
@@ -68,10 +70,11 @@ private:
     QString          mApplicationDir;
     QList<ProcessID> mRunningProcesses;
     DecompressionThread * mDecompressThread = nullptr;
+    CompressionThread   * mCompressionThread = nullptr;
 
 private slots:
+    void  compressionFinished();
     void  decompressionFinished();
-
 
 
 };

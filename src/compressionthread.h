@@ -13,16 +13,15 @@ class CompressionThread : public QThread
 {
     Q_OBJECT
 public:
-    CompressionThread(QString image_name, QString temp_directory, QString tool_path, QStringList arguments, int compression_value = 8) :
-        mArchiveName(image_name + ".xz"),mImageName(image_name), mToolPath(tool_path),mTemporaryDirectory(temp_directory),
+    CompressionThread(QString image_name, QString temp_directory, QString tool_path, QStringList arguments = QStringList(), int compression_value = 7) :
+        mArchiveName(image_name + ".xz"),mImageName(image_name), mToolPath(tool_path),mArguments(arguments),mTemporaryDirectory(temp_directory),
         mCompressionValue(compression_value)
     {}
     enum CompressError{BAD_INPUT_COMP = 0, BAD_OUTPUT_COMP, BAD_FORMAT_COMP, BAD_LOCATE_COMP_BIN };
     Q_ENUM(CompressError)
     void run() Q_DECL_OVERRIDE
     {
-        // Run Some gaurd statements to check decompression is configured correctly
-
+        // Run Some gaurd statements to check compression is configured correctly
         QFile   image_file(mImageName); // Check if the archive even exists
         if(!image_file.exists())
         {
@@ -32,7 +31,7 @@ public:
         }
 
         QDir dir(mTemporaryDirectory);
-        if(dir.exists()) // Check if decompress temporary directory exists?
+        if(dir.exists()) // Check if temporary directory exists?
         {
             qDebug() << "Compression thread - overwriting existing data: " << mTemporaryDirectory;
         }
@@ -50,40 +49,42 @@ public:
         QStringList arguments;
         QProcess* compression = new QProcess();
         QString program_path = mToolPath;  // Check can locate decompression process
-        if(program_path.isEmpty())
+        if(mArguments.isEmpty())
         {
-            program_path = "/3rdparty/7zip/7zr.exe";
-            QFile  process_bin(program_path);
+            QFile  process_bin(mToolPath);
             if(!process_bin.exists())
             {
-                emit error(BAD_LOCATE_COMP_BIN,"Decompression binary not found: " + program_path);
+                emit error(BAD_LOCATE_COMP_BIN,"Compression binary not found: " + mToolPath);
                 emit finishedCompression();
                 return;
             }
+            // Assuming all checks complete begin the compression process
+            int optimal_thread_count = QThread::idealThreadCount();
+            // Generate arguments
+            QByteArray run_argument;
+            run_argument.append(mTemporaryDirectory  + mArchiveName.section("",mArchiveName.lastIndexOf('/')+1));
+            arguments << "a"; // create archive command
+            arguments << run_argument;
+            arguments << "-txz" ;
+            if(optimal_thread_count > 1) // enable multi-threading
+            {
+                if(optimal_thread_count >= 4)
+                    optimal_thread_count = 4;
+                else
+                    optimal_thread_count = 2;
+                QByteArray thread_arg;
+                thread_arg.append("-mmt");
+                QString thread_ct(QString::number(optimal_thread_count));
+                thread_arg.append(thread_ct);
+                arguments << thread_arg;
+            }
+            arguments << "-mx=" +QString::number(mCompressionValue) << "-bsp1" << "-y" << mImageName;
+            mArguments = arguments;
+            mToolPath = mToolPath.left(mToolPath.lastIndexOf('/'));
+            qDebug() << mToolPath;
+            compression->setWorkingDirectory(mToolPath);
+            program_path = mToolPath + "/7zr.exe";
         }
-            // convert Decompression logic to compression logic
-//            // Assuming all checks complete begin the decompression process
-//            int optimal_thread_count = QThread::idealThreadCount();
-//            // Generate arguments
-//            QByteArray run_argument;
-//            run_argument.append("-o");
-//            run_argument.append(mTemporaryDirectory);
-//            arguments << "x";
-//            if(optimal_thread_count > 1) // enable multi-threading
-//            {
-
-//                    optimal_thread_count = 2;
-//                QByteArray thread_arg;
-//                thread_arg.append("-mmt");
-//                QString thread_ct(QString::number(optimal_thread_count));
-//                thread_arg.append(thread_ct);
-//                arguments << thread_arg;
-//            }
-//            arguments << run_argument << "-bsp1" << "-y" << mArchiveName;
-//            QString  str_zero = arguments.at(0);
-//            str_zero = str_zero.remove('\\');
-//            compression->setWorkingDirectory(mToolPath);
-//        }
         // Create the process
 
          // set pwd
@@ -95,11 +96,11 @@ public:
 
         // First 7zr will give us the header
         int progress(0);
-        QString prg_str;
+
         QString header;
         while(compression->state() != QProcess::NotRunning && header.length() < 500)
         {
-            QByteArray output = compression->read(500);
+            QByteArray output = compression->read(250);
             if(!output.isEmpty())
             {
                 header.append(output);
@@ -117,10 +118,10 @@ public:
         QString export_name(header_items.last());
         export_name = export_name.section("",7);
         emit startedCompression(export_name);
-        qDebug() << "Exporting: " << export_name;
+        qDebug() << "Archiving: " << mArchiveName;
         //qDebug() << "Found " << header_items.length() << " Items in Header";    // Output the almost nicely chunked header data
 
-
+        QString prg_str;
         // Read progress from the process
         while(compression->state() != QProcess::NotRunning && progress != 100)
         {

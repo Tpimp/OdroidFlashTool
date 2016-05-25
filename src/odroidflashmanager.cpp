@@ -10,6 +10,18 @@ OdroidFlashManager::OdroidFlashManager(DiskImager *dskimg, QString application_d
 }
 
 
+void OdroidFlashManager::startCompression(QString image_path)
+{
+    if(mCompressionThread)
+        return;
+    mCompressionThread = new CompressionThread(image_path,mTemporaryPath, mApplicationDir + "/3rdparty/7zip/7zr.exe");
+    connect(mCompressionThread, &CompressionThread::compressionProgress,this,&OdroidFlashManager::compressionCompleted);
+    connect(mCompressionThread, &CompressionThread::finishedCompression,this,&OdroidFlashManager::compressionFinished);
+    mRunningProcesses.append(COMPRESSING);
+    mCompressionThread->start();
+    emit processStarted(COMPRESSING);
+}
+
 void OdroidFlashManager::startDecompression(QString archive_path)
 {
     if(mDecompressThread)
@@ -33,6 +45,14 @@ void OdroidFlashManager::cancelCurrentOperation()
     }
 }
 
+void OdroidFlashManager::compressionFinished()
+{
+    disconnect(mCompressionThread, NULL,this,NULL);
+    mCompressionThread->deleteLater();
+    mCompressionThread = nullptr;
+    mRunningProcesses.removeAll(COMPRESSING);
+    emit processFinished(COMPRESSING);
+}
 
 void OdroidFlashManager::decompressionFinished()
 {
@@ -40,6 +60,7 @@ void OdroidFlashManager::decompressionFinished()
     mDecompressThread->deleteLater();
     mDecompressThread = nullptr;
     mRunningProcesses.removeAll(DECOMPRESSING);
+    emit processFinished(DECOMPRESSING);
 }
 
 
@@ -55,10 +76,6 @@ void OdroidFlashManager::queryMountedDevices()
         }
 }
 
-void OdroidFlashManager::startCompression(QString image_path)
-{
-
-}
 
 
 void OdroidFlashManager::startImageWrite(QString image_path)
