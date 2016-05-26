@@ -1,0 +1,5 @@
+Please respect the developers of this software and do not redistribute without referencing the source.
+
+http://github.com/tpimp/odroidflash
+
+USE THIS SOFTWARE AT YOUR OWN RISK!

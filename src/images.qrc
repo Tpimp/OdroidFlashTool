@@ -7,5 +7,6 @@
         <file>images/folder_sm.png</file>
         <file>images/archive_file.png</file>
         <file>images/image_file.png</file>
+        <file>release/OdroidFlashTool.ico</file>
     </qresource>
 </RCC>

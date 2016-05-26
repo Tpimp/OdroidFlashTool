@@ -4,6 +4,8 @@
 #  include <windows.h>
 # endif
 
+IDI_ICON1	ICON	DISCARDABLE	"C:\\Users\\Christopher\\Documents\\GitHub\\odroidflashtool\\src\\release\\OdroidFlashTool.ico"
+
 VS_VERSION_INFO VERSIONINFO
 	FILEVERSION 0,1,0,0
 	PRODUCTVERSION 0,1,0,0

@@ -13,4 +13,5 @@
 	<UserInterfaces>
         <UserInterface>shortcuts.ui</UserInterface>
     </UserInterfaces>
+    <ForcedInstallation>true</ForcedInstallation>
 </Package>

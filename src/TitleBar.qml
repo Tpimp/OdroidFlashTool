@@ -77,7 +77,7 @@ Rectangle {
         radius:4
         color:"#93c47d"
         buttonImage:Image{
-            source:"images/settings.png"
+            source:"release/OdroidFlashTool.ico"
             anchors.fill: parent
             fillMode:Image.PreserveAspectFit
             smooth:true

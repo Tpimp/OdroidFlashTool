@@ -34,9 +34,10 @@ win32 {
                disk.h
     SOURCES += windowsdiskmanager.cpp \
                disk.cpp
-
+    RC_ICONS = release/OdroidFlashTool.ico
+	RC_FILE = OdroidFlashTool_resource.rc
 }
-#RC_FILE = DiskImager.rc
+
 
 TRANSLATIONS  = diskimager_en.ts\
                 diskimager_cn.ts\
@@ -46,3 +47,14 @@ TRANSLATIONS  = diskimager_en.ts\
 RESOURCES += \
     qml.qrc \
     images.qrc
+
+DISTFILES += \
+    installer/config/config.xml \
+    installer/packages/com.odroid.flashtool/meta/package.xml \
+    installer/packages/com.odroid.flashtool/meta/license.txt \
+    installer/packages/com.odroid.flashtool/meta/installscript.qs \
+    images/Win32DiskImager.ico
+
+FORMS += \
+    installer/resources/shortcuts.ui \
+    installer/packages/com.odroid.flashtool/meta/shortcuts.ui
