@@ -15,7 +15,11 @@ HEADERS += diskimager.h \
     odroidflashmanager.h \
     compressionmanager.h \
     decompressionthread.h \
-    compressionthread.h
+    compressionthread.h \
+    windowsdiskreaderthread.h \
+    windowsdiskwriterthread.h \
+    partitionfactory.h \
+    applicationsettings.h
 
 
 SOURCES += main.cpp\
@@ -24,18 +28,25 @@ SOURCES += main.cpp\
     odroidflashmanager.cpp \
     compressionmanager.cpp \
     decompressionthread.cpp \
-    compressionthread.cpp
+    compressionthread.cpp \
+    windowsdiskreaderthread.cpp \
+    windowsdiskwriterthread.cpp \
+    partitionfactory.cpp \
+    applicationsettings.cpp
 
 win32 {
     DEFINES += VER=\"$${VERSTR}\"
     DEFINES += WINVER=0x0601
     DEFINES += _WIN32_WINNT=0x0601
-    HEADERS += windowsdiskmanager.h \
-               disk.h
-    SOURCES += windowsdiskmanager.cpp \
-               disk.cpp
+    HEADERS += windowsdiskmanager.h
+
+
+    SOURCES += windowsdiskmanager.cpp
+
     RC_ICONS = release/OdroidFlashTool.ico
-	RC_FILE = OdroidFlashTool_resource.rc
+    RC_FILE = OdroidFlashTool_resource.rc
+    #CONFIG += embed_manifest_exe
+    #QMAKE_LFLAGS_WINDOWS += MANIFESTUAC:level=\'requireAdministrator\'
 }
 
 
@@ -46,14 +57,16 @@ TRANSLATIONS  = diskimager_en.ts\
 
 RESOURCES += \
     qml.qrc \
-    images.qrc
+    images.qrc \
+    sounds.qrc
 
 DISTFILES += \
     installer/config/config.xml \
     installer/packages/com.odroid.flashtool/meta/package.xml \
     installer/packages/com.odroid.flashtool/meta/license.txt \
     installer/packages/com.odroid.flashtool/meta/installscript.qs \
-    images/Win32DiskImager.ico
+    images/Win32DiskImager.ico \
+    odroidflashtool.qmodel
 
 FORMS += \
     installer/resources/shortcuts.ui \

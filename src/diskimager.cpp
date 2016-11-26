@@ -28,8 +28,9 @@ void DiskImager::generateMd5Hash(QString image_path)
 void DiskImager::initializeDiskImager()
 {
     #ifdef Q_OS_WIN
-        mDiskManager = new WindowsDiskManager(this);
-        connect(mDiskManager, &WindowsDiskManager::error,this,&DiskImager::diskImageError);
+//        mDiskManager = new WindowsDiskManager(this);
+//        connect(mDiskManager, &WindowsDiskManager::error,this,&DiskImager::diskImageError);
+//        connect(mDiskManager, &WindowsDiskManager::readCompleted,this,&DiskImager::readCompleted);
     #else
         mDiskManager = new LinuxDiskManager(this);
         connect(mDiskManager, &LinuxDiskManager::error,this,&DiskImager::diskImageError);
@@ -75,16 +76,16 @@ void DiskImager::queryBootIni()
 }
 
 
-void DiskImager::requestReadImage(QString read_path, QString image_path)
+void DiskImager::requestReadImage(QString read_path, QString image_path, const OdroidFlashManager &odf)
 {
-    if(!mDiskManager)
-        return;
-    mState = READING_STATE;
-    mDiskManager->requestReadImage(read_path,image_path);
+   // if(!mDiskManager)
+   //     return;
+   // WindowsDiskManagerState = READING_STATE;
+    //mDiskManager->requestReadImage(read_path,image_path);
 }
 
 
-void DiskImager::requestWriteImage(QString image_path, QString write_path)
+void DiskImager::requestWriteImage(QString image_path, QString write_path,const OdroidFlashManager &odf)
 {
 
 }

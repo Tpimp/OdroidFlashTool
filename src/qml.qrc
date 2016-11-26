@@ -12,5 +12,11 @@
         <file>DropList.qml</file>
         <file>ProgressBar.qml</file>
         <file>FileBrowser.qml</file>
+        <file>MessageBox.qml</file>
+        <file>CookieCrumbBar.qml</file>
+        <file>ApplicationSettings.qml</file>
+        <file>ProgressView.qml</file>
+        <file>ProcessView.qml</file>
+        <file>BootView.qml</file>
     </qresource>
 </RCC>

@@ -9,31 +9,33 @@ Rectangle {
     property alias    dropText:displayText
     property alias    dropList:dropList
     property alias    mouseArea:listMouseArea
+    property string   currentName:""
+    property var      currentData:undefined
     property ListModel dropModel:ListModel{}
-    function addItemToList(name, data)
+    function addItemToList(name, indata)
     {
-        dropModel.append({"name":name,"itemData":data});
-        if(dropModel.count == 1)
-        {
-            displayText.text = name;
-        }
+        dropModel.append({"name":name,"itemData":indata});
         dropList.height = dropModel.count > 3 ? (dropTop.height *3.5):(dropTop.height * dropModel.count)
     }
     function removeItemAt(index)
     {
-        if(currentIndex == index)
+        if(currentIndex === index)
         {
             if(currentIndex > 0)
             {
                 if(currentIndex+1 == dropModel.count)
                 {
                     // if the last one
-                    displayText.text = dropModel.get(currentIndex-1).name
+                    var item = dropModel.get(currentIndex-1);
+                    dropTop.currentName = item.name
+                    dropTop.currentData = item.itemData
                 }
                 else
                 {
                     // grab the next text, but currentIndex wont change
-                    displayText.text = dropModel.get(currentIndex+1).name
+                    var item = dropModel.get(currentIndex+1);
+                    dropTop.currentName = item.name
+                    dropTop.currentData = item.itemData
                 }
             }
             else
@@ -41,12 +43,14 @@ Rectangle {
                 if(dropModel.count > 1)
                 {
                     // other items in ListElement
-                    displayText.text = dropModel.get(index+1).name;
+                    var item = dropModel.get(index+1);
+                    dropTop.currentName = item.name
+                    dropTop.currentData = item.itemData
                 }
                 else
                 {
                     // removing last one
-                    displayText.text = ""
+                    dropTop.currentName = ""
                 }
             }
             dropModel.remove(index)
@@ -81,7 +85,7 @@ Rectangle {
         anchors.margins:parent.height/8
         font.pixelSize: parent.height * .74
         verticalAlignment: Text.AlignVCenter
-        text:currentText
+        //text:currentText
     }
     MouseArea{
         id:listMouseArea
@@ -126,6 +130,14 @@ Rectangle {
             }
         }
     }
+    Rectangle{
+        visible:dropList.visible
+        anchors.fill: dropList
+        color:"darkgrey"
+        border.width: 3
+        anchors.margins: -2
+        radius:4
+    }
     ListView{
         id:dropList
         anchors.top:parent.top
@@ -134,6 +146,22 @@ Rectangle {
         visible:false
         model:dropModel
         clip:true
+
+
+        onCurrentIndexChanged:{
+            if(currentIndex === -1)
+            {
+                dropTop.currentName = "";
+                dropTop.currentData = undefined;
+            }
+            else
+            {
+                var item = dropModel.get(currentIndex)
+                dropTop.currentName = item.name;
+                dropTop.currentData = item.itemData;
+            }
+        }
+
         delegate:Rectangle{
             id:delegateMe
             color:dropTop.color
@@ -156,7 +184,6 @@ Rectangle {
                 anchors.fill: parent
                 onClicked:{
                     dropList.currentIndex = index;
-                    displayText.text = name;
                     dropList.visible = false
                 }
                 hoverEnabled: true

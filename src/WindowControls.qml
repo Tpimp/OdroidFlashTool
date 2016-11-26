@@ -91,9 +91,9 @@ Rectangle {
                 id:closeRect
                 color:"transparent"
                 border.color: innerColor
-                border.width: 3
-                height:parent.height *.8
-                width:parent.width * .8
+                border.width: 2
+                height:parent.height *.82
+                width:parent.width * .82
                 radius:width/2
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter

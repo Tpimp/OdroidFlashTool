@@ -1,824 +1,242 @@
 #include "windowsdiskmanager.h"
-#include <QStorageInfo>
 #include <QDebug>
+#include <QFile>
+#include <io.h>
+#include <QStorageInfo>
+#include "partitionfactory.h"
 
-WindowsDiskManager::WindowsDiskManager(QObject *parent) : QObject(parent)
+
+quint16 WindowsDiskManager::getDriveDetails(char drive_letter,HANDLE volume_handle,HANDLE & device_handle,DiskMap& disk_map, int &disk_number, quint64& drive_size, QString &error_str)
 {
-    mVolumeHandle = INVALID_HANDLE_VALUE;
-    mFileHandle = INVALID_HANDLE_VALUE;
-    mRawDiskHandle = INVALID_HANDLE_VALUE;
+    // Quite extensive lookup function - should be called as little as possible, with the caller working to maintain disk_details externally
 
-    sectorData = NULL;
-    sectorsize = 0ul;
+    // First get a list of the volume infos
 
-}
-
-void WindowsDiskManager::queryBootIni()
-{
-
-}
-
-
-void WindowsDiskManager::requestReadImage(QString read_path, QString image_path)
-{
-
-    QStorageInfo  read_drive(read_path);
-    QStorageInfo  image_drive(image_path);
-    int deviceID(0);
-    foreach (const QStorageInfo &storage, QStorageInfo::mountedVolumes()) {
-            if (storage.isValid() && storage.isReady() && !storage.isRoot()) {
-                if(storage.rootPath().compare("C://") != 0)
-                {
-                    deviceID++;
-                    if(storage.rootPath().compare(read_drive.rootPath()) == 0)
-                        break;
-                }
-            }
-        }
-
-
-
-    if(read_drive.rootPath().compare(image_drive.rootPath()) == 0)
+    VOLUME_DISK_EXTENTS volumeDiskExtents;
+    DWORD dwBytesReturned = 0;
+    QList<PDISK_EXTENT>    disk_details;
+    DiskDescriptorInfo     disk_info;
+    BOOL bResult = DeviceIoControl(  volume_handle,
+                                     IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
+                                     NULL,
+                                     0,
+                                     &volumeDiskExtents,
+                                     sizeof(volumeDiskExtents),
+                                     &dwBytesReturned,
+                                     NULL);
+    if(!bResult)
     {
-        emit error(tr("Write Error") + " : " +tr("Image file cannot be located on the target device."));
+        wchar_t *errormessage=NULL;
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
+        error_str = QString::fromUtf16((const ushort *)errormessage);
+        LocalFree(errormessage);
+        qDebug() << "Failed to fetch the volume information with handle: " << long(volume_handle);
+        return -1;
     }
-    double mbpersec;
-    unsigned long long i, lasti, numsectors, filesize, spaceneeded = 0ull;
-    qDebug() << "Device " << read_drive.device();
-    int volumeID = read_path.at(0).toLatin1() - 'A'; // convert letter to a a value
-    mVolumeHandle = getHandleOnVolume(volumeID, GENERIC_READ);
-    if (mVolumeHandle == INVALID_HANDLE_VALUE)
+
+    bool isFirst(true);
+
+    if(volumeDiskExtents.NumberOfDiskExtents == 0)
     {
-        error(tr("Write Error") + " : Failed to fetch volume handle " + read_path);
-        return;
+        qDebug() << "Fetched volume information was empty with handle: " << long(volume_handle);
+        return -1;
     }
-    if (!getLockOnVolume(mVolumeHandle))
+
+    // find the disk number
+    for (DWORD n = 0;  n < volumeDiskExtents.NumberOfDiskExtents;++n)
     {
-        CloseHandle(mVolumeHandle);
-        mVolumeHandle = INVALID_HANDLE_VALUE;
-        error(tr("Write Error") + " : Failed to lock volume " + read_path);
-        return;
-    }
-    if (!unmountVolume(mVolumeHandle))
-    {
-        removeLockOnVolume(mVolumeHandle);
-        CloseHandle(mVolumeHandle);
-        mVolumeHandle = INVALID_HANDLE_VALUE;
-        error(tr("Write Error") + " : Failed to lock volume " + read_path);
-        return;
-    }
-    mFileHandle = getHandleOnFile(LPCWSTR(image_path.data()), GENERIC_WRITE);
-    if (mFileHandle == INVALID_HANDLE_VALUE)
-    {
-        removeLockOnVolume(mVolumeHandle);
-        CloseHandle(mVolumeHandle);
-        mVolumeHandle = INVALID_HANDLE_VALUE;
-        error(tr("Write Error") + " : Failed to lock volume " + read_path);
-        return;
-    }
-    mRawDiskHandle = getHandleOnDevice(deviceID, GENERIC_READ);
-    if (mRawDiskHandle == INVALID_HANDLE_VALUE)
-    {
-        removeLockOnVolume(mVolumeHandle);
-        CloseHandle(mFileHandle);
-        CloseHandle(mVolumeHandle);
-        mVolumeHandle = INVALID_HANDLE_VALUE;
-        mFileHandle = INVALID_HANDLE_VALUE;
-        error(tr("Write Error") + " : Failed to lock volume " + read_path);
-        return;
-    }
-    numsectors = getNumberOfSectors(mRawDiskHandle, &sectorsize);
-    if(mReadOnlyPartitions)
-    {
-        // Read MBR partition table
-        sectorData = readSectorDataFromHandle(mRawDiskHandle, 0, 1ul, 512ul);
-        numsectors = 1ul;
-        // Read partition information
-        for (i=0ul; i<4ul; i++)
+        PDISK_EXTENT pDiskExtent =  &volumeDiskExtents.Extents[n];
+        disk_details.append(pDiskExtent);
+        if(isFirst)
         {
-            uint32_t partitionStartSector = *((uint32_t*) (sectorData + 0x1BE + 8 + 16*i));
-            uint32_t partitionNumSectors = *((uint32_t*) (sectorData + 0x1BE + 12 + 16*i));
-            // Set numsectors to end of last partition
-            if (partitionStartSector + partitionNumSectors > numsectors)
-            {
-                numsectors = partitionStartSector + partitionNumSectors;
-            }
+            disk_number = pDiskExtent->DiskNumber;
+            isFirst = false;
         }
     }
-    filesize = getFileSizeInSectors(mFileHandle, sectorsize);
-    if (filesize >= numsectors)
+
+
+
+
+    uint16_t bytes_per_sector(512);
+    MBR_TABLE   ebr_table;
+    // Get Partition table
+    QString device_name("\\\\.\\PhysicalDrive");
+    device_name.append(QString::number(disk_number));
+
+    WriteChunk       MBR;
+    MBR.first = 0;
+    MBR.second = 1;
+    WriteChunk      FAT;
+
+    QFile  file(device_name);
+    if(!file.open(QIODevice::ReadOnly))
+        qDebug() << "Failed to open disk";
+    char  mbr_data[512];
+    quint64 bytes_read = file.read(mbr_data,512);
+    ebr_table.setData(mbr_data,bytes_read);
+    FAT.first = ebr_table.Record1.LBAAddress;
+    FAT.second = ebr_table.Record1.PartitionSectors;
+    file.close();
+
+    WriteChunk  linux_chunk;
+    linux_chunk.first = ebr_table.Record2.LBAAddress;
+    linux_chunk.second = ebr_table.Record2.PartitionSectors;
+   // free_space.first = (linux_chunk.first + linux_chunk.second);
+
+    DWORD spc,bps,freeclusters,totalclusters;
+    wchar_t drive_name[] = {drive_letter,':','\\','\0'};
+    BOOL result = GetDiskFreeSpace(drive_name,&spc,&bps,&freeclusters,&totalclusters);
+    if(result == 0)
     {
-        spaceneeded = 0ull;
+        qDebug() << "Failed to get DiskFreeSpace";
+        wchar_t *errormessage=NULL;
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
+        qDebug() << "Error Message : " << QString::fromUtf16((const ushort *)errormessage);
+        LocalFree(errormessage);
     }
     else
     {
-        spaceneeded = (unsigned long long)(numsectors - filesize) * (unsigned long long)(sectorsize);
+        drive_size = spc * bps * totalclusters;
+        //free_space = spc * bps * freeclusters;
+        bytes_per_sector = bps;
     }
+    bool success = WindowsDiskManager::getRawDiskHandle(device_handle,disk_number,error_str);
+    if(!success)
+    {
+        qDebug() << "Failed to get device handle" << error_str;
+    }
+    else{
+        DISK_GEOMETRY_EX geometry;
+        DWORD bytes_returned;
+        bResult = DeviceIoControl(device_handle,IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,NULL,0,&geometry,sizeof(DISK_GEOMETRY_EX),&bytes_returned,NULL);
+        if(bResult != 0)
+        {
+            qDebug() << "Geometry: " << geometry.DiskSize.QuadPart;
+            drive_size = geometry.DiskSize.QuadPart;
+            bytes_per_sector = geometry.Geometry.BytesPerSector;
+        }
+    }
+
+    disk_info.volumeLength = drive_size;
+    disk_info.writeChunks.append(MBR);
+    disk_info.writeChunks.append(FAT);
+    disk_info.writeChunks.append(linux_chunk);
+
+    WriteChunk       free_space_partition;
+    free_space_partition.first = ( (linux_chunk.first +linux_chunk.second) * bytes_per_sector);
+    free_space_partition.second = (drive_size - free_space_partition.first);
+    disk_info.writeChunks.append(free_space_partition);
+
+    disk_map.insert(drive_letter,disk_info);
+
+    return bytes_per_sector;
+}
+
+
+bool WindowsDiskManager::getFileSize(QFile & file, QStorageInfo & image_drive, quint64 &file_size, quint64 &sector_size, quint64 & num_sectors,  QString &error_str)
+{
+    file_size =  file.size();
+    quint64 spaceneeded(0);
+    spaceneeded = (num_sectors +1)  *sector_size;
     if (image_drive.bytesAvailable() <= spaceneeded)
     {
-        removeLockOnVolume(mVolumeHandle);
-        CloseHandle(mRawDiskHandle);
-        CloseHandle(mFileHandle);
-        CloseHandle(mVolumeHandle);
-        sectorData = NULL;
-        mRawDiskHandle = INVALID_HANDLE_VALUE;
-        mFileHandle = INVALID_HANDLE_VALUE;
-        mVolumeHandle = INVALID_HANDLE_VALUE;
-        emit error(tr("Write Error") + tr(" : Disk is not large enough for the specified image."));
-        return;
+        spaceneeded = 0;
+        error_str = "Not enough room on the write disk to create image.";
+        return false;
     }
-    // figure out how to alter UI based on num sectors
-//    if (numsectors == 0ul)
-//    {
-//        progressbar->setRange(0, 100);
-//    }
-//    else
-//    {
-//        progressbar->setRange(0, (int)numsectors);
-//    }
-    lasti = 0ul;
-
-
-    // Do the actual work (Read the image)
-    bool isReading(true);
-    for (i = 0ul; i < numsectors && isReading; i += 1024ul)
-    {
-        sectorData = readSectorDataFromHandle(mRawDiskHandle, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize);
-        if (sectorData == NULL)
-        {
-            removeLockOnVolume(mVolumeHandle);
-            CloseHandle(mRawDiskHandle);
-            CloseHandle(mFileHandle);
-            CloseHandle(mVolumeHandle);
-            mRawDiskHandle = INVALID_HANDLE_VALUE;
-            mFileHandle = INVALID_HANDLE_VALUE;
-            mVolumeHandle = INVALID_HANDLE_VALUE;
-            emit error(tr("Write Error") + " : REACHED A NULL SECTOR");
-            return;
-        }
-        if (!writeSectorDataToHandle(mFileHandle, sectorData, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize))
-        {
-            delete[] sectorData;
-            removeLockOnVolume(mVolumeHandle);
-            CloseHandle(mRawDiskHandle);
-            CloseHandle(mFileHandle);
-            CloseHandle(mVolumeHandle);
-            sectorData = NULL;
-            mRawDiskHandle = INVALID_HANDLE_VALUE;
-            mFileHandle = INVALID_HANDLE_VALUE;
-            mVolumeHandle = INVALID_HANDLE_VALUE;
-            emit error(tr("Write Error") + " : Failed to write sector to file!");
-            return;
-        }
-        delete[] sectorData;
-        sectorData = NULL;
-//        if ()
-//        {
-//            mbpersec = (((double)sectorsize * (i - lasti)) * ((float)ONE_SEC_IN_MS / update_timer.elapsed())) / 1024.0 / 1024.0;
-//            statusbar->showMessage();
-//            update_timer.start();
-//            elapsed_timer->update(i, numsectors);
-//            lasti = i;
-//            emit writeCompleted((sectorsize * i)/(sectorsize *numsectors),QString("%1MB/s").arg(mbpersec));
-//        }
-    }
-    removeLockOnVolume(mVolumeHandle);
-    CloseHandle(mRawDiskHandle);
-    CloseHandle(mFileHandle);
-    CloseHandle(mVolumeHandle);
-    mRawDiskHandle = INVALID_HANDLE_VALUE;
-    mFileHandle = INVALID_HANDLE_VALUE;
-    mVolumeHandle = INVALID_HANDLE_VALUE;
-
+    return true;
 }
 
 
-void WindowsDiskManager::requestWriteImage(QString image_path, QString write_path)
+
+bool WindowsDiskManager::getVolumeHandle(char drive_letter, QFile & volume_handle, QString & error_str, HANDLE & handle_to_set,QIODevice::OpenModeFlag mode)
 {
-    // TODO: Convert old widget based "write" logic. This code ran when "Write Image" was clicked.
-    /*
-    bool passfail = true;
-    if (!leFile->text().isEmpty())
+
+    char volumeName[8] = "";
+    const char* volumeFormat = "\\\\.\\%c:";
+    sprintf(volumeName, volumeFormat, drive_letter);
+    volume_handle.setFileName(volumeName);
+    if(!volume_handle.open(mode))
     {
-        QFileInfo fileinfo(leFile->text());
-        if (fileinfo.exists() && fileinfo.isFile() &&
-                fileinfo.isReadable() && (fileinfo.size() > 0) )
-        {
-            if (leFile->text().at(0) == cboxDevice->currentText().at(1))
-            {
-                QMessageBox::critical(NULL, tr("Write Error"), tr("Image file cannot be located on the target device."));
-                return;
-            }
-
-            // build the drive letter as a const char *
-            //   (without the surrounding brackets)
-            QString qs = cboxDevice->currentText();
-            qs.replace(QRegExp("[\\[\\]]"), "");
-            QByteArray qba = qs.toLocal8Bit();
-            const char *ltr = qba.data();
-            if (QMessageBox::warning(NULL, tr("Confirm overwrite"), tr("Writing to a physical device can corrupt the device.\n"
-                                                                       "(Target Device: %1 \"%2\")\n"
-                                                                       "Are you sure you want to continue?").arg(cboxDevice->currentText()).arg(getDriveLabel(ltr)),
-                                     QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
-            {
-                return;
-            }
-            status = STATUS_WRITING;
-            bCancel->setEnabled(true);
-            bWrite->setEnabled(false);
-            bRead->setEnabled(false);
-            bVerify->setEnabled(false);
-            double mbpersec;
-
-            #ifndef DONT_VERIFY_WRITE
-                        int compare_result;
-            #endif
-
-            unsigned long long i, lasti, availablesectors, numsectors;
-            int volumeID = cboxDevice->currentText().at(1).toLatin1() - 'A';
-            int deviceID = cboxDevice->itemData(cboxDevice->currentIndex()).toInt();
-            hVolume = getHandleOnVolume(volumeID, GENERIC_WRITE);
-            if (hVolume == INVALID_HANDLE_VALUE)
-            {
-                status = STATUS_IDLE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            if (!getLockOnVolume(hVolume))
-            {
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            if (!unmountVolume(hVolume))
-            {
-                removeLockOnVolume(hVolume);
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            hFile = getHandleOnFile(LPCWSTR(leFile->text().data()), GENERIC_READ);
-            if (hFile == INVALID_HANDLE_VALUE)
-            {
-                removeLockOnVolume(hVolume);
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            //hRawDisk = getHandleOnDevice(deviceID, GENERIC_WRITE);
-            hRawDisk = getHandleOnDevice(deviceID, GENERIC_WRITE|GENERIC_READ);
-            if (hRawDisk == INVALID_HANDLE_VALUE)
-            {
-                removeLockOnVolume(hVolume);
-                CloseHandle(hFile);
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                hFile = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            availablesectors = getNumberOfSectors(hRawDisk, &sectorsize);
-            numsectors = getFileSizeInSectors(hFile, sectorsize);
-            if (numsectors > availablesectors)
-            {
-                bool datafound = false;
-                i = availablesectors;
-                unsigned long nextchunksize = 0;
-                while ( (i < numsectors) && (datafound == false) )
-                {
-                    nextchunksize = ((numsectors - i) >= 1024ul) ? 1024ul : (numsectors - i);
-                    sectorData = readSectorDataFromHandle(hFile, i, nextchunksize, sectorsize);
-                    if(sectorData == NULL)
-                    {
-                        // if there's an error verifying the truncated data, just move on to the
-                        //  write, as we don't care about an error in a section that we're not writing...
-                        i = numsectors + 1;
-                    } else {
-                        unsigned int j = 0;
-                        unsigned limit = nextchunksize * sectorsize;
-                        while ( (datafound == false) && ( j < limit ) )
-                        {
-                            if(sectorData[j++] != 0)
-                            {
-                                datafound = true;
-                            }
-                        }
-                        i += nextchunksize;
-                    }
-                }
-                // delete the allocated sectorData
-                delete[] sectorData;
-                sectorData = NULL;
-                // build the string for the warning dialog
-                std::ostringstream msg;
-                msg << "More space required than is available:"
-                    << "\n  Required: " << numsectors << " sectors"
-                    << "\n  Available: " << availablesectors << " sectors"
-                    << "\n  Sector Size: " << sectorsize
-                    << "\n\nThe extra space " << ((datafound) ? "DOES" : "does not") << " appear to contain data"
-                    << "\n\nContinue Anyway?";
-                if(QMessageBox::warning(NULL, tr("Not enough available space!"),
-                                        tr(msg.str().c_str()), QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok)
-                {
-                    // truncate the image at the device size...
-                    numsectors = availablesectors;
-                }
-                else    // Cancel
-                {
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-            }
-
-            progressbar->setRange(0, (numsectors == 0ul) ? 100 : (int)numsectors);
-            lasti = 0ul;
-            update_timer.start();
-            elapsed_timer->start();
-            for (i = 0ul; i < numsectors && status == STATUS_WRITING; i += 1024ul)
-            {
-                sectorData = readSectorDataFromHandle(hFile, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize);
-                if (sectorData == NULL)
-                {
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-                if (!writeSectorDataToHandle(hRawDisk, sectorData, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize))
-                {
-                    delete[] sectorData;
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    sectorData = NULL;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-#ifndef DONT_VERIFY_WRITE
-                sectorData2 = readSectorDataFromHandle(hRawDisk, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize);
-                if (sectorData2 == NULL)
-                {
-                    delete sectorData2;
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    sectorData2 = NULL;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-
-                compare_result = memcmp( sectorData, sectorData2, ((numsectors - i >= 1024ul) ? 1024ul:(numsectors - i) * sectorsize) );
-                if (compare_result != 0)
-                {
-                    delete[] sectorData;
-                    delete[] sectorData2;
-                    sectorData  = NULL;
-                    sectorData2 = NULL;
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    sectorData2 = NULL;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    QMessageBox::critical(NULL, tr("Verification Error"), tr("Read back data is different from original data."));
-                    return;
-                }
-#endif
-                delete[] sectorData;
-                sectorData = NULL;
-#ifndef DONT_VERIFY_WRITE
-                delete[] sectorData2;
-                sectorData2 = NULL;
-#endif
-                QCoreApplication::processEvents();
-                if (update_timer.elapsed() >= ONE_SEC_IN_MS)
-                {
-                    mbpersec = (((double)sectorsize * (i - lasti)) * ((float)ONE_SEC_IN_MS / update_timer.elapsed())) / 1024.0 / 1024.0;
-                    statusbar->showMessage(QString("%1MB/s").arg(mbpersec));
-                    elapsed_timer->update(i, numsectors);
-                    update_timer.start();
-                    lasti = i;
-                }
-                progressbar->setValue(i);
-                QCoreApplication::processEvents();
-            }
-            removeLockOnVolume(hVolume);
-            CloseHandle(hRawDisk);
-            CloseHandle(hFile);
-            CloseHandle(hVolume);
-            hRawDisk = INVALID_HANDLE_VALUE;
-            hFile = INVALID_HANDLE_VALUE;
-            hVolume = INVALID_HANDLE_VALUE;
-            if (status == STATUS_CANCELED){
-                passfail = false;
-            }
-        }
-        else if (!fileinfo.exists() || !fileinfo.isFile())
-        {
-            QMessageBox::critical(NULL, tr("File Error"), tr("The selected file does not exist."));
-            passfail = false;
-        }
-        else if (!fileinfo.isReadable())
-        {
-            QMessageBox::critical(NULL, tr("File Error"), tr("You do not have permision to read the selected file."));
-            passfail = false;
-        }
-        else if (fileinfo.size() == 0)
-        {
-            QMessageBox::critical(NULL, tr("File Error"), tr("The specified file contains no data."));
-            passfail = false;
-        }
-        progressbar->reset();
-        statusbar->showMessage(tr("Done."));
-        bCancel->setEnabled(false);
-        setReadWriteButtonState();
-        if (passfail){
-            QMessageBox::information(NULL, tr("Complete"), tr("Write Successful."));
-        }
-
+        qDebug()<< "Failed to open volume with mode" << mode;
+        return false;
     }
-    else
+    handle_to_set = HANDLE(_get_osfhandle(volume_handle.handle()));
+    if(handle_to_set == INVALID_HANDLE_VALUE)
     {
-        QMessageBox::critical(NULL, tr("File Error"), tr("Please specify an image file to use."));
+        wchar_t *errormessage=NULL;
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
+        error_str = QString::fromUtf16((const ushort *)errormessage);
+        LocalFree(errormessage);
+        return false;
     }
-    if (status == STATUS_EXIT)
-    {
-        close();
-    }
-    status = STATUS_IDLE;
-    elapsed_timer->stop();
-    */
-}
-
-void WindowsDiskManager::verifyDiskImage()
-{
-    // TODO: Convert old widget based "verify" logic. This code ran when "Verify Image" was clicked.
-    /*bool passfail = true;
-    if (!leFile->text().isEmpty())
-    {
-        QFileInfo fileinfo(leFile->text());
-        if (fileinfo.exists() && fileinfo.isFile() &&
-                fileinfo.isReadable() && (fileinfo.size() > 0) )
-        {
-            if (leFile->text().at(0) == cboxDevice->currentText().at(1))
-            {
-                QMessageBox::critical(NULL, tr("Write Error"), tr("Image file cannot be located on the target device."));
-                return;
-            }
-
-            // build the drive letter as a const char *
-            //   (without the surrounding brackets)
-            QString qs = cboxDevice->currentText();
-            qs.replace(QRegExp("[\\[\\]]"), "");
-            QByteArray qba = qs.toLocal8Bit();
-#if 0
-            const char *ltr = qba.data();
-            if (QMessageBox::warning(NULL, tr("Confirm overwrite"), tr("Writing to a physical device can corrupt the device.\n"
-                                                                       "(Target Device: %1 \"%2\")\n"
-                                                                       "Are you sure you want to continue?").arg(cboxDevice->currentText()).arg(getDriveLabel(ltr)),
-                                     QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
-            {
-                return;
-            }
-#endif
-            status = STATUS_WRITING;
-            bCancel->setEnabled(true);
-            bWrite->setEnabled(false);
-            bRead->setEnabled(false);
-            bVerify->setEnabled(false);
-            double mbpersec;
-
-            int compare_result;
-
-            unsigned long long i, lasti, availablesectors, numsectors;
-            int volumeID = cboxDevice->currentText().at(1).toLatin1() - 'A';
-            int deviceID = cboxDevice->itemData(cboxDevice->currentIndex()).toInt();
-            hVolume = getHandleOnVolume(volumeID, GENERIC_WRITE);
-            if (hVolume == INVALID_HANDLE_VALUE)
-            {
-                status = STATUS_IDLE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            if (!getLockOnVolume(hVolume))
-            {
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            if (!unmountVolume(hVolume))
-            {
-                removeLockOnVolume(hVolume);
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            hFile = getHandleOnFile(LPCWSTR(leFile->text().data()), GENERIC_READ);
-            if (hFile == INVALID_HANDLE_VALUE)
-            {
-                removeLockOnVolume(hVolume);
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            //hRawDisk = getHandleOnDevice(deviceID, GENERIC_WRITE);
-            hRawDisk = getHandleOnDevice(deviceID, GENERIC_WRITE|GENERIC_READ);
-            if (hRawDisk == INVALID_HANDLE_VALUE)
-            {
-                removeLockOnVolume(hVolume);
-                CloseHandle(hFile);
-                CloseHandle(hVolume);
-                status = STATUS_IDLE;
-                hVolume = INVALID_HANDLE_VALUE;
-                hFile = INVALID_HANDLE_VALUE;
-                bCancel->setEnabled(false);
-                setReadWriteButtonState();
-                return;
-            }
-            availablesectors = getNumberOfSectors(hRawDisk, &sectorsize);
-            numsectors = getFileSizeInSectors(hFile, sectorsize);
-            if (numsectors > availablesectors)
-            {
-                bool datafound = false;
-                i = availablesectors;
-                unsigned long nextchunksize = 0;
-                while ( (i < numsectors) && (datafound == false) )
-                {
-                    nextchunksize = ((numsectors - i) >= 1024ul) ? 1024ul : (numsectors - i);
-                    sectorData = readSectorDataFromHandle(hFile, i, nextchunksize, sectorsize);
-                    if(sectorData == NULL)
-                    {
-                        // if there's an error verifying the truncated data, just move on to the
-                        //  write, as we don't care about an error in a section that we're not writing...
-                        i = numsectors + 1;
-                    } else {
-                        unsigned int j = 0;
-                        unsigned limit = nextchunksize * sectorsize;
-                        while ( (datafound == false) && ( j < limit ) )
-                        {
-                            if(sectorData[j++] != 0)
-                            {
-                                datafound = true;
-                            }
-                        }
-                        i += nextchunksize;
-                    }
-                }
-                // delete the allocated sectorData
-                delete[] sectorData;
-                sectorData = NULL;
-                // build the string for the warning dialog
-                std::ostringstream msg;
-                msg << "More space required than is available:"
-                    << "\n  Required: " << numsectors << " sectors"
-                    << "\n  Available: " << availablesectors << " sectors"
-                    << "\n  Sector Size: " << sectorsize
-                    << "\n\nThe extra space " << ((datafound) ? "DOES" : "does not") << " appear to contain data"
-                    << "\n\nContinue Anyway?";
-                if(QMessageBox::warning(NULL, tr("Not enough available space!"),
-                                        tr(msg.str().c_str()), QMessageBox::Ok, QMessageBox::Cancel) == QMessageBox::Ok)
-                {
-                    // truncate the image at the device size...
-                    numsectors = availablesectors;
-                }
-                else    // Cancel
-                {
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-            }
-
-            progressbar->setRange(0, (numsectors == 0ul) ? 100 : (int)numsectors);
-            lasti = 0ul;
-            update_timer.start();
-            elapsed_timer->start();
-            for (i = 0ul; i < numsectors && status == STATUS_WRITING; i += 1024ul)
-            {
-                sectorData = readSectorDataFromHandle(hFile, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize);
-                if (sectorData == NULL)
-                {
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-#if 0
-                if (!writeSectorDataToHandle(hRawDisk, sectorData, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize))
-                {
-                    delete[] sectorData;
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    sectorData = NULL;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-#endif
-                sectorData2 = readSectorDataFromHandle(hRawDisk, i, (numsectors - i >= 1024ul) ? 1024ul:(numsectors - i), sectorsize);
-                if (sectorData2 == NULL)
-                {
-                    delete sectorData2;
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    sectorData2 = NULL;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    return;
-                }
-
-                compare_result = memcmp( sectorData, sectorData2, ((numsectors - i >= 1024ul) ? 1024ul:(numsectors - i) * sectorsize) );
-                if (compare_result != 0)
-                {
-                    delete[] sectorData;
-                    delete[] sectorData2;
-                    sectorData  = NULL;
-                    sectorData2 = NULL;
-                    removeLockOnVolume(hVolume);
-                    CloseHandle(hRawDisk);
-                    CloseHandle(hFile);
-                    CloseHandle(hVolume);
-                    status = STATUS_IDLE;
-                    sectorData2 = NULL;
-                    hRawDisk = INVALID_HANDLE_VALUE;
-                    hFile = INVALID_HANDLE_VALUE;
-                    hVolume = INVALID_HANDLE_VALUE;
-                    bCancel->setEnabled(false);
-                    setReadWriteButtonState();
-                    QMessageBox::critical(NULL, tr("Verification Error"), tr("Read back data is different from original data."));
-                    return;
-                }
-
-                delete[] sectorData;
-                sectorData = NULL;
-
-                delete[] sectorData2;
-                sectorData2 = NULL;
-
-                QCoreApplication::processEvents();
-                if (update_timer.elapsed() >= ONE_SEC_IN_MS)
-                {
-                    mbpersec = (((double)sectorsize * (i - lasti)) * ((float)ONE_SEC_IN_MS / update_timer.elapsed())) / 1024.0 / 1024.0;
-                    statusbar->showMessage(QString("%1MB/s").arg(mbpersec));
-                    elapsed_timer->update(i, numsectors);
-                    update_timer.start();
-                    lasti = i;
-                }
-                progressbar->setValue(i);
-                QCoreApplication::processEvents();
-            }
-            removeLockOnVolume(hVolume);
-            CloseHandle(hRawDisk);
-            CloseHandle(hFile);
-            CloseHandle(hVolume);
-            hRawDisk = INVALID_HANDLE_VALUE;
-            hFile = INVALID_HANDLE_VALUE;
-            hVolume = INVALID_HANDLE_VALUE;
-            if (status == STATUS_CANCELED){
-                passfail = false;
-            }
-        }
-        else if (!fileinfo.exists() || !fileinfo.isFile())
-        {
-            QMessageBox::critical(NULL, tr("File Error"), tr("The selected file does not exist."));
-            passfail = false;
-        }
-        else if (!fileinfo.isReadable())
-        {
-            QMessageBox::critical(NULL, tr("File Error"), tr("You do not have permision to read the selected file."));
-            passfail = false;
-        }
-        else if (fileinfo.size() == 0)
-        {
-            QMessageBox::critical(NULL, tr("File Error"), tr("The specified file contains no data."));
-            passfail = false;
-        }
-        progressbar->reset();
-        statusbar->showMessage(tr("Done."));
-        bCancel->setEnabled(false);
-        setReadWriteButtonState();
-        if (passfail){
-            QMessageBox::information(NULL, tr("Complete"), tr("Verify Successful."));
-        }
-
-    }
-    else
-    {
-        QMessageBox::critical(NULL, tr("File Error"), tr("Please specify an image file to use."));
-    }
-    if (status == STATUS_EXIT)
-    {
-        close();
-    }
-    status = STATUS_IDLE;
-    elapsed_timer->stop();
-    */
+    return true;
 }
 
 
-WindowsDiskManager::~WindowsDiskManager()
+bool WindowsDiskManager::lockVolume(HANDLE volume_handle, QString &error_str)
 {
-    // TODO: Convert mainwindow destructor to WindowsDiskManager dtor
-    if (mRawDiskHandle != INVALID_HANDLE_VALUE)
+    DWORD bytesreturned;
+    BOOL bResult(DeviceIoControl(volume_handle, FSCTL_LOCK_VOLUME, NULL, 0, NULL, 0, &bytesreturned, NULL));
+    if (!bResult)
     {
-        CloseHandle(mRawDiskHandle);
-        mRawDiskHandle = INVALID_HANDLE_VALUE;
+        wchar_t *errormessage=NULL;
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
+        error_str = QString::fromUtf16((const ushort *)errormessage);
+        LocalFree(errormessage);
     }
-    if (mFileHandle != INVALID_HANDLE_VALUE)
+    return bool(bResult);
+
+}
+
+bool WindowsDiskManager::getRawDiskHandle(HANDLE &disk_handle,int disk_number, QString &error_str,DWORD access )
+{
+    QString device_name("\\\\.\\");
+    device_name.append("PhysicalDrive");
+    device_name.append(QString::number(disk_number));
+
+    disk_handle = CreateFile(device_name.toStdWString().c_str(), access, FILE_SHARE_READ | FILE_SHARE_WRITE  , NULL, OPEN_EXISTING, FILE_FLAG_WRITE_THROUGH, NULL);
+    if (disk_handle == INVALID_HANDLE_VALUE)
     {
-        CloseHandle(mFileHandle);
-        mFileHandle = INVALID_HANDLE_VALUE;
+        wchar_t *errormessage=NULL;
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
+        error_str = QString::fromUtf16((const ushort *)errormessage);
+        LocalFree(errormessage);
+        return false;
     }
-    if (mVolumeHandle != INVALID_HANDLE_VALUE)
+
+    return true;
+}
+
+bool WindowsDiskManager::unmountVolume(HANDLE volume_handle, char drive_letter, QString &error_str)
+{
+    DWORD junk;
+    BOOL bResult;
+    wchar_t drive_path[]= {'A',':','\0'};
+    drive_path[0] = drive_letter;
+    bResult = DeviceIoControl(volume_handle, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &junk, NULL);
+    DefineDosDevice(DDD_RAW_TARGET_PATH |DDD_REMOVE_DEFINITION  |DDD_EXACT_MATCH_ON_REMOVE,drive_path,drive_path);
+    if (!bResult)
     {
-        CloseHandle(mVolumeHandle);
-        mVolumeHandle = INVALID_HANDLE_VALUE;
+        wchar_t *errormessage=NULL;
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
+        error_str = QString::fromUtf16((const ushort *)errormessage);
+        LocalFree(errormessage);
     }
-    if (sectorData != NULL)
+    return bool(bResult);
+}
+
+bool WindowsDiskManager::removeLock(HANDLE volume_handle, QString & error_str)
+{
+    DWORD junk;
+    BOOL bResult;
+    bResult = DeviceIoControl(volume_handle, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &junk, NULL);
+    if (!bResult)
     {
-        delete[] sectorData;
-        sectorData = NULL;
+        wchar_t *errormessage=NULL;
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
+        error_str = QString::fromUtf16((const ushort *)errormessage);
+        LocalFree(errormessage);
     }
+    return bool(bResult);
 }

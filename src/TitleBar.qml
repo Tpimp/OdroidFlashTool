@@ -1,5 +1,5 @@
 import QtQuick 2.6
-
+import QtMultimedia 5.5
 Rectangle {
     id:titleTop
     property alias windowTitle:titleText
@@ -9,10 +9,12 @@ Rectangle {
         id:titleText
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.horizontalCenterOffset: -parent.width/8
-        font.pixelSize: 36
+        font.pixelSize: 32
         anchors.top: parent.top
         width:parent.width *.28
         height:40
+        font.family: "Caladea"
+        font.italic: true
     }
     onSettingsOpenChanged:
     {
@@ -26,14 +28,36 @@ Rectangle {
         }
     }
 
+    SoundEffect {
+        id: openSound
+        source: "qrc:/sounds/SettingsOpen.wav"
+        volume: .35
+    }
+    SoundEffect {
+        id: closeSound
+        source: "qrc:/sounds/SettingsClose.wav"
+        volume:.35
+    }
     function closeSettings()
     {
+        appSettings.closeOut()
+        settingsButton.enabled = false
+        appSettings.enabled = false
+        appSettings.opacity = 0;
         closeAnimation.start();
+        closeSound.play();
+        AppSettings.saveSettings();
     }
 
     function openSettings()
     {
+        settingsButton.enabled = false
+        appSettings.enabled = true
+        appSettings.visible = true
+        appSettings.opacity = 1.0
+        openSound.play();
         openAnimation.start();
+
     }
 
 
@@ -88,7 +112,7 @@ Rectangle {
         mouseArea.hoverEnabled: true
         mouseArea.onEntered:
         {
-            color = "#434343"
+            color = "#00ff00"
         }
         mouseArea.onExited:
         {
@@ -99,21 +123,41 @@ Rectangle {
         id:openAnimation
         target:titleTop
         property:"height"
-        duration:300
+        duration:400
         alwaysRunToEnd: true
         from:40
-        to:160
+        to:480
         running: false
+        onStopped:{
+            settingsButton.enabled = true
+        }
     }
     NumberAnimation{
         id:closeAnimation
         target:titleTop
         property:"height"
-        duration:150
+        duration:200
         alwaysRunToEnd: true
-        from:160
+        from:480
         to:40
         running:false
+        onStopped: {
+            appSettings.visible = false
+            settingsButton.enabled = true
+        }
     }
-
+    ApplicationSettings{
+        id:appSettings
+        anchors.top: settingsButton.bottom
+        anchors.margins:2
+        anchors.bottom: parent.bottom
+        anchors.left:parent.left
+        anchors.right:parent.right
+        visible:false
+        opacity:0
+        enabled:false
+        Behavior on opacity{
+            NumberAnimation{duration:550;}
+        }
+    }
 }

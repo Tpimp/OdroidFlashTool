@@ -26,7 +26,7 @@ public:
         if(!image_file.exists())
         {
             emit error(BAD_INPUT_COMP,"Image File not found: " + mImageName);
-            emit finishedCompression();
+            emit finishedCompression("Error");
             return;
         }
 
@@ -42,7 +42,7 @@ public:
             {
                 qDebug() << "ERROR Could not create temporary directory.";
                 emit error(BAD_OUTPUT_COMP,"Failed to create temporary directory.");
-                emit finishedCompression();
+                emit finishedCompression("Error");
                 return;
             }
         }
@@ -55,7 +55,7 @@ public:
             if(!process_bin.exists())
             {
                 emit error(BAD_LOCATE_COMP_BIN,"Compression binary not found: " + mToolPath);
-                emit finishedCompression();
+                emit finishedCompression("Error");
                 return;
             }
             // Assuming all checks complete begin the compression process
@@ -89,7 +89,6 @@ public:
 
          // set pwd
         compression->setReadChannel(QProcess::StandardOutput); // we want to get the progress on stdout
-
         // Start the process and wait for it to start
         compression->start(program_path, arguments);
         compression->waitForStarted();
@@ -111,9 +110,9 @@ public:
         }
 
         // "Cleanse the header" It is heavily formated to display in commandline
-        header = header.replace(QRegExp("\s*\r\n\s*"),"\n");
-        header = header.replace(QRegExp("\s*\n\n\s*"),"\r");
-        header = header.replace(QRegExp("\s*\n\s*"),"\r");
+        header = header.replace(QRegExp("\\s*\r\n\\s*"),"\n");
+        header = header.replace(QRegExp("\\s*\n\n\\s*"),"\r");
+        header = header.replace(QRegExp("\\s*\n\\s*"),"\r");
         QStringList header_items = header.split("\r"); // any remainding '\r' represent "Data Chunks"
         QString export_name(header_items.last());
         export_name = export_name.section("",7);
@@ -165,14 +164,16 @@ public:
         emit compressionProgress(100);
         compression->close();
         delete compression;
-        emit finishedCompression(); // actually complete
+        QString out_file(mTemporaryDirectory  + mArchiveName.section("",mArchiveName.lastIndexOf('/')+1));
+        out_file.append(".xz");
+        emit finishedCompression(out_file); // actually complete
     }
 
 signals:
     void error(CompressError error, QString error_str );
     void compressionProgress(int progress);
     void startedCompression(QString archive_name);
-    void finishedCompression();
+    void finishedCompression(QString file_out);
 
 private:
     QString     mArchiveName;

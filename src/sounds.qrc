@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>sounds/SettingsClose.wav</file>
+        <file>sounds/SettingsOpen.wav</file>
+    </qresource>
+</RCC>

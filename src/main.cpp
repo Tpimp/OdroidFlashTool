@@ -23,12 +23,14 @@
 
 #include <QGuiApplication>
 #include "diskimager.h"
+#include "applicationsettings.h"
 #include "odroidflashmanager.h"
 #include <QCommandLineParser>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QTranslator>
 #include <QtQml>
+
 int main(int argc, char *argv[])
 {
     QCommandLineParser parser;
@@ -39,21 +41,34 @@ int main(int argc, char *argv[])
     QTranslator translator;
     translator.load(QString("diskimager_")+ locale);
 
+
     if(isGraphical)
     {
         QGuiApplication app(argc, argv);
         app.setApplicationDisplayName("Odroid Flash Tool");
         QQmlApplicationEngine graphical_engine(&app);
+        QString reason("??");
+        qmlRegisterUncreatableType<OdroidFlashManager>("com.odroid.odf",1,0,"FlashManager",reason);
         app.installTranslator(&translator);
         DiskImager  *    dskimg = new DiskImager(&app);
         dskimg->initializeDiskImager();
 
         QString pwd = app.applicationDirPath();
-        OdroidFlashManager * flashmanager = new OdroidFlashManager(dskimg,pwd,&app);
+        ApplicationSettings   settings(&app);
 
-        pwd += "/tmp";
-        flashmanager->setTemporaryPath(pwd);
+        if(!settings.settingsFileExist(pwd +"/" + "settings.json"))
+        {
+            QString temp_dir = pwd;
+            temp_dir.append("/tmp");
+            settings.setWorkDirectory(temp_dir);
+            settings.createSettings(pwd +"/settings.json");
+        }
+        else
+            settings.loadSettings(pwd + "/settings.json");
+        OdroidFlashManager * flashmanager = new OdroidFlashManager(dskimg,&settings,pwd,&app);
+
         graphical_engine.rootContext()->setContextProperty("ODF",flashmanager);
+        graphical_engine.rootContext()->setContextProperty("AppSettings",&settings);
         graphical_engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
         return app.exec();
     }

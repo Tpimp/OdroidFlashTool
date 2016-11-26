@@ -66,8 +66,7 @@ public:
         arguments << "x";
         if(optimal_thread_count > 1) // enable multi-threading
         {
-
-                optimal_thread_count = 2;
+            optimal_thread_count = 2;
             QByteArray thread_arg;
             thread_arg.append("-mmt");
             QString thread_ct(QString::number(optimal_thread_count));
@@ -104,9 +103,9 @@ public:
         }
 
         // "Cleanse the header" It is heavily formated to display in commandline
-        header = header.replace(QRegExp("\s*\r\n\s*"),"\n");
-        header = header.replace(QRegExp("\s*\n\n\s*"),"\r");
-        header = header.replace(QRegExp("\s*\n\s*"),"\r");
+        header = header.replace(QRegExp("\\s*\r\n\\s*"),"\n");
+        header = header.replace(QRegExp("\\s*\n\n\\s*"),"\r");
+        header = header.replace(QRegExp("\\s*\n\\s*"),"\r");
         QStringList header_items = header.split("\r"); // any remainding '\r' represent "Data Chunks"
         QString export_name(header_items.last());
         export_name = export_name.section("",7);
@@ -158,7 +157,7 @@ public:
         emit decompressionProgress(100);
         decompression->close();
         delete decompression;
-        emit finishedDecompression(); // actually complete
+        emit finishedDecompression(mInputFile.section("",0,mInputFile.length()-3)); // actually complete
     }
     enum DecompressError{BAD_INPUT_DEC = 0, BAD_OUTPUT_DEC, BAD_FORMAT_DEC, BAD_LOCATE_DEC_BIN };
     Q_ENUM(DecompressError)
@@ -166,7 +165,7 @@ signals:
     void error(DecompressError error_code, QString error_text);
     void startedDecompress(QString output_name);
     void decompressionProgress(qreal progress);
-    void finishedDecompression();
+    void finishedDecompression(QString file_path = "");
 
 private:
     QString        mInputFile;

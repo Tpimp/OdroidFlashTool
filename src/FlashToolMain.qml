@@ -1,19 +1,31 @@
 import QtQuick 2.6
+
 Rectangle {
     id:flashToolMain
     property string processText:""
-    Text{
-        id:progressTitle
-        anchors.left:deviceView.left
-        anchors.top:deviceView.bottom
-        text:"Progress"
-        font.underline: true
-        anchors.topMargin: 8
-        font.pixelSize: 25
-        font.bold: true
-        width: parent.width/5
-        color:"white"
+    signal progressChanged(int progress)
+    property bool   processRunning:false
+    signal progressStart()
+
+    function startOperation(operation,  data )
+    {
+        if(operation === "Finish")
+        {
+            operationStarted(operation,data);
+            flashButton.enabled = true
+
+        }
+        else if(operation === "Compress")
+        {
+            ODF.startCompression(data);
+            var  out_info = new Array;
+            out_info[0] = deviceView.getSelectedDevice();
+            out_info[1] = data;
+            operationStarted(deviceView,out_info);
+        }
     }
+    signal operationStarted(string operation,var data);
+    signal operationFinished(string operation, var data);
     Connections{
         target:ODF
         onDecompressionComplete:{
@@ -24,54 +36,78 @@ Rectangle {
             progressBar.value = percentage
             progressText.text = processText + percentage.toString() + "%"
         }
-
+        onReadCompleted:{
+            progressBar.value = percentage
+            progressText.text = processText + percentage.toString() + "%  @ " + read_speed;
+            waitTime.text = "Estimated Wait: " + time_left;
+        }
+        onWriteCompleted:{
+            progressBar.value = percentage
+            progressText.text = processText + percentage.toString() + "%  @ " + write_speed;
+            waitTime.text = "Estimated Wait: " + time_left;
+        }
         onProcessStarted:{
             switch(id)
             {
-                case 0: flashToolMain.processText = "Decompressing image: "; break;
-                case 1: flashToolMain.processText = "Compressing Image: "; break;
+                case 0: flashToolMain.processText = "Decompressing image: ";flashButton.buttonText.text = "Cancel Decompression"; break;
+                case 1: flashToolMain.processText = "Compressing Image: ";flashButton.buttonText.text = "Cancel Compression"; break;
+                case 2: flashToolMain.processText = "Writing Image: ";flashButton.buttonText.text = "Cancel Write"; break;
+                case 3: flashToolMain.processText = "Reading Image: ";flashButton.buttonText.text = "Cancel Read"; break;
                 default:break;
             }
+            processRunning = true;
+
         }
         onProcessFinished:
         {
             flashButton.enabled = true;
+            imageView.compressCheck.enabled = true;
+            waitTime.visible = false;
+            switch(id)
+            {
+                case 0:operationFinished("Writing", data); break;
+                case 1: flashToolMain.processText = "Compressing Image: "; break;
+                case 2: flashToolMain.processText = "Writing Image: "; break;
+                case 3: operationFinished("Reading", data);   break;
+                default:break;
+            }
+            processRunning = false;
         }
+        onOperationCanceled:{
+            if(flashMode)
+            {
+                if(imageView.shouldCompress)
+                {
+                    flashButton.buttonText.text = "Write Image"
+                    progressText.text = "Ready to Write"
+                }
+            }
+            else
+            {
+                flashButton.buttonText.text = "Read Image"
+                progressText.text = "Ready to Read "
+            }
+        }
+
+    }
+    ProgressView{
+        id:progressView
+        anchors.left:deviceView.left
+        anchors.right:deviceView.right
+        anchors.bottom: flashButton.top
+        anchors.top:bootView.bottom
+        anchors.bottomMargin:8
+        anchors.topMargin:4
+        onProgressUpdated: progressChanged(progress);
     }
 
-    ProgressBar{
-        id:progressBar
-        anchors.left: progressTitle.right
-        anchors.right: deviceView.right
-        anchors.top: deviceView.bottom
-        anchors.topMargin:8
-        height:30
-        radius:8
-        anchors.leftMargin: 8
-        border.color:"#00ff00"
-        color:"transparent"
-        innerColor:"#6aa84f"
-        innerBorder.color:"#38761d"
-        onProgressFinished: {
-            flashButton.enabled = true;
-            //progressTimer.stop()
-        }
-        Text{
-            id:progressText
-            anchors.fill:parent
-            anchors.margins: 6
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            color:"white"
-            font.pixelSize: height
-            text:"Writing Image to Drive Z:"
-        }
-    }
+
+
     Button{
         id:flashButton
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.margins: 8
         anchors.bottom:parent.bottom
+        anchors.bottomMargin: 6
         buttonText:Text{
             anchors.fill: parent
             text:  "Write Image"
@@ -82,11 +118,11 @@ Rectangle {
             Component.onCompleted: parent = flashButton
         }
         color:"#6aa84f"
-        border.color: "#b7b7b7"
-        border.width: 1
+        border.color: "white"
+        border.width: 2
         radius:12
         height:42
-        width: parent.width *.38
+        width: 240
         mouseArea.hoverEnabled: true
         mouseArea.onHoveredChanged: {
             if(mouseArea.containsMouse)
@@ -97,61 +133,78 @@ Rectangle {
             else
             {
                 flashButton.color = "#6aa84f"
-                flashButton.border.color = "#999999"
+                flashButton.border.color = "white"
             }
         }
         mouseArea.onClicked: {
-            if(imageView.flashMode) // write mode
+            if(processRunning)
             {
-                if(imageView.shouldCompress && imageView.filePath.length > 0)
-                {
-                    ODF.startDecompression(imageView.filePath)
-                    flashButton.enabled = false;
-                }
+                ODF.cancelCurrentOperations()
+
             }
             else
             {
-                if(imageView.shouldCompress && imageView.filePath.length > 0)
+                imageView.compressCheck.enabled = false;
+                if(imageView.flashMode) // write mode
                 {
-                    //ODF.startCompression(imageView.filePath)
-                    ODF.startCompression( imageView.filePath)
-                    flashButton.enabled = false;
+                    if(imageView.shouldCompress && imageView.filePath.length > 0)
+                    {
+                        ODF.startDecompression(imageView.filePath)
+                    }
+                    else
+                    {
+                        ODF.startImageWrite(deviceView.getSelectedDevice(), imageView.filePath,false,false)
+                    }
+                }
+                else
+                {
+                    if(imageView.filePath.length == 0)
+                        return;
+                    ODF.startReadImage(deviceView.getSelectedDevice(), imageView.filePath,false,true)
                 }
             }
         }
     }
     ImageFileView{
         id:imageView
-        height:parent.height *.42
+        height:parent.height *.24
         anchors.left: parent.left
+        anchors.topMargin: 2
         anchors.right: parent.right
         anchors.top: parent.top
         onFlashModeChanged: {
             if(flashMode)
             {
                 flashButton.buttonText.text = "Write Image"
-                progressText.text = "Writing Image to Drive Z:"
-                deviceView.setWriteMode()
+                progressView.progressText = "Ready to Write"
             }
             else
             {
                 flashButton.buttonText.text = "Read Image"
-                progressText.text = "Reading Image from Drive Z:"
-                deviceView.setReadMode()
+                progressView.progressText = "Ready to Read"
             }
         }
         onFileBrowserOpen: {
             fileBrowserLoader.active = true
         }
     }
+
+    BootView{
+        id:bootView
+        height:parent.height *.2
+        anchors.topMargin: 4
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: deviceView.bottom
+    }
     DeviceView{
         id:deviceView
-        height:parent.height *.3
+        height:parent.height *.12
+        anchors.topMargin: 4
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: imageView.bottom
     }
-
     Loader{
         id:fileBrowserLoader
         anchors.fill: parent
@@ -165,19 +218,19 @@ Rectangle {
             onFileSelected: {
                 imageView.filePath = file
                 imageView.shouldCompress = isArchive
-                fileBrowser.slideExit()
             }
-
-           // onFolderChanged: fileBrowser2.folder = folder
             Component.onCompleted:
             {
-                fileBrowser.openFileBrowser(imageView.flashMode,"file:///c:/")
+                if(imageView.flashMode)
+                    fileBrowser.openFileBrowser(0,ODF.getSystemRootUrl(),ODF.getSystemRootName())
+                else
+                    fileBrowser.openFileBrowser(1,ODF.getSystemRootUrl(),ODF.getSystemRootName())
             }
             onExited:
             {
                 fileBrowserLoader.active = false
             }
         }
-       active:false
+        active:false
     }
 }

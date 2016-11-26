@@ -17,7 +17,7 @@
  *
  *******************************************************************/
 
-
+class OdroidFlashManager;
 class DiskImager : public QObject
 {
     Q_OBJECT
@@ -43,14 +43,14 @@ public:
      ***************************************************************************/
     enum ImagerState{READY_STATE = 0, WRITING_STATE, READING_STATE, WAITING_STATE, MOUNTED_STATE};
     Q_ENUM(ImagerState)
-
 signals:
     void  errorOccured(ImagerState state,QString error);
+    void  readCompleted(int percentage, QString write_speed);
 
 public slots:
     void  queryBootIni();
-    void  requestWriteImage(QString image_path, QString write_path);
-    void  requestReadImage(QString read_path, QString image_path);
+    void  requestWriteImage(QString image_path, QString write_path,const OdroidFlashManager & odf);
+    void  requestReadImage(QString read_path, QString image_path,const OdroidFlashManager & odf);
     void  generateMd5Hash(QString image_path);
     //void    verifyImage();
     void  onClosingApplication();

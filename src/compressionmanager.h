@@ -18,6 +18,7 @@ private:
     DecompressionThread * mDecompressor = nullptr;
     QString               mDecompressTempDir;
     QString               mCompressTempDir;
+
 private slots:
     void cleanUpDecompressor();
 };
