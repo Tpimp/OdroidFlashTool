@@ -324,12 +324,12 @@ Rectangle{
             TextInput{
                 id: workDirectoryPath
                 anchors.fill: parent
-                anchors.leftMargin: 4
-                anchors.rightMargin: 4
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
                 horizontalAlignment: TextInput.AlignLeft
                 verticalAlignment: TextInput.AlignVCenter
                 enabled:false
-                font.pixelSize: (width/text.length+ 8) < parent.height *.62 ? (width/text.length+ 8):parent.height *.62
+                font.pixelSize: (width/text.length+ 6) < parent.height *.6 ? (width/text.length+ 6):parent.height *.6
             }
         }
         Button{

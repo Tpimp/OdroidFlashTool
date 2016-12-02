@@ -95,7 +95,7 @@ Rectangle {
         anchors.left:deviceView.left
         anchors.right:deviceView.right
         anchors.bottom: flashButton.top
-        anchors.top:bootView.bottom
+        anchors.top:deviceView.bottom
         anchors.bottomMargin:8
         anchors.topMargin:4
         onProgressUpdated: progressChanged(progress);
@@ -189,17 +189,10 @@ Rectangle {
         }
     }
 
-    BootView{
-        id:bootView
-        height:parent.height *.2
-        anchors.topMargin: 4
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: deviceView.bottom
-    }
+
     DeviceView{
         id:deviceView
-        height:parent.height *.12
+        height:parent.height *.28
         anchors.topMargin: 4
         anchors.left: parent.left
         anchors.right: parent.right

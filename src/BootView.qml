@@ -3,48 +3,46 @@ import QtQuick 2.5
 Rectangle {
     id:bootTop
     color:"transparent"
-    border.color: "white"
-    border.width: 2
-    anchors.margins: 8
+    property alias bootStatus:bootStatusText
     Text{
         id:displayText
-        anchors.left:parent.left
+        anchors.right:bootSettingsButton.left
+        anchors.rightMargin:8
         anchors.top:parent.top
-        anchors.topMargin:8
-        text:"Boot File"
+        horizontalAlignment: Text.AlignLeft
+        verticalAlignment: Text.AlignVCenter
+        text:"Boot Settings"
+        font.pixelSize:18
         font.underline: true
-        anchors.leftMargin: 8
-        font.pixelSize:22
         font.bold: true
         color:"white"
     }
 
+
     Rectangle{
-        id:filenameContainer
-        radius:8
-        width: parent.width *.8
-        height: 36
-        border.color: "#6aa84f"
+        color:"#38761d"
+        border.color: "white"
         border.width: 2
-        anchors.top:displayText.bottom
-        anchors.topMargin: 8
-        anchors.left:parent.left
-        anchors.leftMargin: 8
-        anchors.right: fileOpenButton.left
-        anchors.rightMargin: 4
-        clip:true
-        TextInput{
-            id: inputFilePath
+        radius:2
+        height: 36
+        width: parent.width * .75
+        anchors.bottom: parent.bottom
+        anchors.right: bootSettingsButton.left
+        anchors.rightMargin: 6
+        Text{
+            id:bootStatusText
+            color:"white"
+            text:"Write Default"
             anchors.fill: parent
-            anchors.leftMargin: 4
-            anchors.rightMargin: 4
-            horizontalAlignment: TextInput.AlignLeft
-            verticalAlignment: TextInput.AlignVCenter
-            text: ""
-            font.pixelSize: (width/text.length+ 8) < parent.height *.62 ? (width/text.length+ 8):parent.height *.62
+            anchors.margins: 1
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            font.pixelSize: 18
         }
     }
-    RadioButton{
+
+
+    /*RadioButton{
         id:preserveBootIni
         anchors.left:displayText.right
         anchors.leftMargin: 15
@@ -69,38 +67,38 @@ Rectangle {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         text:"Preserve Existing"
-    }
+    }*/
 
+    //TODO: change file open button to boot settings (configure boot options)
     Button{
-        id:fileOpenButton
-        anchors.verticalCenter: filenameContainer.verticalCenter
+        id:bootSettingsButton
+        anchors.bottom:parent.bottom
         anchors.right: parent.right
-        anchors.rightMargin:8
-        height:36
-        width:height
-        radius:4
-        color:"#6aa84f"
-        border.color: "#999999"
-        border.width: 2
+        anchors.rightMargin:6
+        anchors.bottomMargin: 6
+        height:42
+        width:42
+        radius:8
+        color:"black"
+        border.width: 0
         buttonImage:Image{
-            anchors.fill: parent
-            anchors.margins:4
-            source:"/images/folder.png"
+            anchors.centerIn: parent
+            height:42
+            width:42
+            source:"/images/boot.png"
             fillMode: Image.PreserveAspectFit
-            smooth:true
-            Component.onCompleted: parent = fileOpenButton;
+            Component.onCompleted: parent = bootSettingsButton;
         }
         mouseArea.hoverEnabled: true
         mouseArea.onHoveredChanged: {
             if(mouseArea.containsMouse)
             {
-                fileOpenButton.color = "#999999"
-                fileOpenButton.border.color = "#00ff00"
+                border.width = 2
+                bootSettingsButton.border.color = "orange"
             }
             else
             {
-                fileOpenButton.color = "#6aa84f"
-                fileOpenButton.border.color = "#999999"
+                border.width = 0
             }
         }
     }

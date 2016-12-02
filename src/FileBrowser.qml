@@ -43,7 +43,6 @@ Rectangle {
             folderModel.rootFolder = root_path;
             if(current_path !== undefined)
             {
-                //cookieCrumbBar;
                 currentPath = current_path;
                 var crumbs = ODF.getCrumbPath(current_path)
                 cookieCrumbBar.clearCrumbs();

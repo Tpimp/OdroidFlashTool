@@ -72,7 +72,7 @@ Rectangle {
         spacing:3
         delegate:Rectangle{
             width:96
-            height:parent.height
+            height:topRect.height *.94
             radius:6
             color: model.itemColor
             border.color: "black"

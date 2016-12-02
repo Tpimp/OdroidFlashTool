@@ -69,7 +69,7 @@ Rectangle{
         TextInput{
             id: inputFilePath
             anchors.fill: parent
-            anchors.leftMargin: 4
+            anchors.leftMargin: 5
             anchors.rightMargin: 4
             horizontalAlignment: TextInput.AlignLeft
             verticalAlignment: TextInput.AlignVCenter

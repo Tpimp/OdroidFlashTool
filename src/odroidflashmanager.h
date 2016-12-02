@@ -38,8 +38,10 @@ public:
 
     enum ProcessID{DECOMPRESSING = 0,COMPRESSING, WRITING_IMAGE, WRITING_IMAGE_VERIFY, READING_IMAGE, READING_IMAGE_VERIFY,WRITING_BOOT, READING_BOOT, RESTORING_BOOT, DELETE_IMAGE, WRITING_GUID, MOUNTING, DOWNLOADING, NULL_PROCESS};
     enum FlashMode{READ = 0, WRITE = 1};
+    enum DeviceID{C1 = 0, C2 = 1, XU4 = 2, U3 =3};
     Q_ENUM(ProcessID)
     Q_ENUM(FlashMode)
+    Q_ENUM(DeviceID)
 
 signals:
     void appendProcess(QString name);
@@ -66,7 +68,7 @@ signals:
     void temporaryPathChanged(QString path);
 
 public slots:
-    void backupBootIni(QString boot_ini_path);
+    void backupBootIni(QString boot_ini_path,DeviceID id );
     void writeBootIni(QString boot_ini_path, QString drive_path);
     void cancelCurrentOperations();
     void restoreLastBootBackup(QString drive_path);

@@ -18,5 +18,6 @@
         <file>ProgressView.qml</file>
         <file>ProcessView.qml</file>
         <file>BootView.qml</file>
+        <file>BootEditor.qml</file>
     </qresource>
 </RCC>

@@ -19,7 +19,7 @@ OdroidFlashManager::OdroidFlashManager(DiskImager *dskimg,ApplicationSettings* s
     }
 }
 
-void OdroidFlashManager::backupBootIni(QString boot_ini_path)
+void OdroidFlashManager::backupBootIni(QString boot_ini_path, DeviceID id)
 {
     QString drive_letter(boot_ini_path.section("",0,2));
     QStorageInfo  info(drive_letter);

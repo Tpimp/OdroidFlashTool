@@ -6,6 +6,7 @@ Rectangle {
     signal progressStart()
     signal progressUpdated(int progress)
     property alias progressText:progressText.text
+    property alias  verifyAfter:verifyFlag.checked
     color:"transparent"
     border.color: "white"
     border.width: 2
@@ -13,10 +14,10 @@ Rectangle {
         id:progressTitle
         anchors.left:parent.left
         anchors.top:parent.top
-        anchors.topMargin: 6
-        text:"Progress"
+        anchors.topMargin: 8
+        text:"Operation Status"
         font.underline: true
-        font.pixelSize: 20
+        font.pixelSize: 24
         font.bold: true
         anchors.leftMargin: 6
         width: 38
@@ -33,11 +34,37 @@ Rectangle {
     ProcessView{
         id:processView
         anchors.horizontalCenter: progressBar.horizontalCenter
-        height:30
+        height:36
         anchors.bottom: progressBar.top
-        anchors.bottomMargin: 4
+        anchors.bottomMargin: 8
     }
-
+    RadioButton{
+        id:verifyFlag
+        color:"transparent"
+        radius:4
+        border.color: "#00ff00"
+        border.width: 2
+        anchors.top:parent.top
+        anchors.right:verifyText.left
+        anchors.margins: 8
+        anchors.topMargin: 16
+        width:26
+        height:26
+        source:"/images/check.png"
+        checked:AppSettings.mVerifyFlash
+        onCheckedChanged: {AppSettings.setVerifyFlash(verifyFlag.checked);}
+    }
+    Text{
+        id:verifyText
+        anchors.verticalCenter: verifyFlag.verticalCenter
+        anchors.right: parent.right
+        anchors.margins: 8
+        color: "#11d011"
+        font.pixelSize: 18
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        text:"Use Block Verify"
+    }
     ProgressBar{
         id:progressBar
         anchors.horizontalCenter: parent.horizontalCenter

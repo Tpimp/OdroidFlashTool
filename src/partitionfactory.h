@@ -134,6 +134,34 @@ struct GPT_TABLE{
     }
 };
 
+
+struct C1_BOOT_TABLE{ // high level
+    uint8_t   MBR_BL1[32000]; // BL1 AMLOGIC Binary - 32kB
+    uint8_t   UBOOT_BIN[480000]; // Bootloader Binary - 480kB
+    uint8_t   UBOOT_ENV[3200];   // Stores UBOOT Environment CRC32 checksum - 32kB
+};
+
+struct C2_BOOT_TABLE{
+    uint8_t   MBR_BL1[48500]; // BL1 AMLOGIC Binary                          - 48.5kB
+    uint8_t   UBOOT_BIN[667500]; // Bootloader Binary                        - 667.5kB
+    uint8_t   UBOOT_ENV[3200];   // Stores UBOOT Environment CRC32 checksum  - 32kB
+};
+
+struct XU4_BOOT_TABLE{
+    MBR_TABLE MBR;  // Standard MBR table - 512B
+    uint8_t   FW_BLOB1[15000]; // Firmware Blob 1 (Samsung) - 15kB
+    uint8_t   FW_BLOB2[16000]; // Firmware Blob 2 (Odroid)  - 16kB
+    uint8_t   UBOOT_BIN[328000]; // UBOOT Binary            - 328kB
+    uint8_t   ARM_TZSW[256000]; // Arm Trust Zone SW        - 256kB
+    uint8_t   UBOOT_ENV[16000];   // Stores UBOOT Environment CRC32 checksum - 16kB
+};
+
+typedef  XU4_BOOT_TABLE U3_BOOT_TABLE; // U3 Boot table and Xu4 are identical
+
+
+
+//TODO: Add partition struct for FAT16 and FAT32
+
 #pragma pack()
 
 
@@ -145,9 +173,11 @@ public:
     explicit PartitionFactory(QObject *parent = 0);
 
 signals:
+    void partitionTableInfoLoaded(QByteArray data);
+    void errorLoadingTableInfo(QString btd_file, int error);
 
 public slots:
-
+    void loadPartitionTableInfo(QString btd_file); // loads in expected
 };
 
 #endif // PARTITIONFACTORY_H

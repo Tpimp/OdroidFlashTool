@@ -11,6 +11,7 @@ Rectangle {
     property alias    mouseArea:listMouseArea
     property string   currentName:""
     property var      currentData:undefined
+    property alias    dropListFrame:dropListFrame
     property ListModel dropModel:ListModel{}
     function addItemToList(name, indata)
     {
@@ -131,6 +132,7 @@ Rectangle {
         }
     }
     Rectangle{
+        id:dropListFrame
         visible:dropList.visible
         anchors.fill: dropList
         color:"darkgrey"
