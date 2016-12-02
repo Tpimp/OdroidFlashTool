@@ -164,6 +164,59 @@ typedef  XU4_BOOT_TABLE U3_BOOT_TABLE; // U3 Boot table and Xu4 are identical
 
 #pragma pack()
 
+/*********************************************************************
+ * Partition Factory is a bridge between the business and persistent
+ * layers. For the most part, all the of logic contained is
+ * related to persistent behavior - loading partition table data from
+ * physical files (.btd).
+ *
+ * These files allow the partition data to be translated into a working
+ * model in memory. This helps primarily in two ways
+ *
+ *       -Device partition table is not hard coded so it will be easier
+ * to update and modify OEM table formats (or add Android) in the future.
+ *
+ *      -Custom partition models can be described for non OEM images.
+ *
+ * From a business logic perspective - the partition factory will
+ * generate a very good (or at least better than no) "understanding".
+ * With the goal being able to correctly locate a boot.ini (and more
+ * importanly 'mmcblk0p1').
+ *
+ *
+ * How does it work? -
+ *   Above are several structures capable of storing raw bytes.
+ * Each one works to give meaning to the raw data.
+ * If the user knows the image is of type 'C1 (OEM)' then the boot
+ * section will be described (both length and sector locations).
+ * This allows the tool to more accurately "load" the boot record
+ * and boot.ini partition. If the tool fails to get this information
+ * correct it is very likely the flash will be poor or the boot
+ * configurations will not work properly.
+ *
+ * The structure for describing the partition table is very easy -
+ *  <Sector Length>1</Sector Length> // Length of each Sector (in bytes) - very important device specific number
+ *  First describe the boot section
+ *  <MBR> // Not the best label as this section might contain binary blobs and much more
+ *      <Sector Start>0</Sector Start> // What sector does it start at
+ *      <Sector End>512000</Sector End>  // Last valid Sector
+ *      <Boot Length>512000</Boot Length> // Length of Master Boot Section (in bytes)
+ *      // Because the boot section is never really "touched" on most ODROID platforms
+ *      // The assumption is that the boot section is also contiguous
+ *      // In most cases it is safe to assume anything prior to the FAT partition (boot)
+ *      // should be included in this section
+ *  </MBR>
+ *  Next Simply Describe the /boot partition
+ *  <Boot>
+ *      <Sector Start>0</Sector Start> // What sector does it start at
+ *      <Sector End>512000</Sector End>  // Last valid Sector
+ *      <Boot Length>512000</Boot Length> // Length of Master Boot Section (in bytes)
+ * </Boot>
+ * </Other> // Other block describes paritions that are desired to be copied
+ * </Other>
+ *
+ * *******************************************************************/
+
 
 class PartitionFactory : public QObject
 {
@@ -178,6 +231,7 @@ signals:
 
 public slots:
     void loadPartitionTableInfo(QString btd_file); // loads in expected
+
 };
 
 #endif // PARTITIONFACTORY_H
