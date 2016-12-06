@@ -10,7 +10,7 @@ VERSTR = '\\"$${VERSION}\\"'
 QMAKE_TARGET_PRODUCT = "Odroid Flash Tool"
 QMAKE_TARGET_DESCRIPTION = "Writes image files to microSD and eMMC cards"
 # Input
-HEADERS += diskimager.h \
+HEADERS += \
     linuxdiskmanager.h \
     odroidflashmanager.h \
     compressionmanager.h \
@@ -19,11 +19,14 @@ HEADERS += diskimager.h \
     windowsdiskreaderthread.h \
     windowsdiskwriterthread.h \
     partitionfactory.h \
-    applicationsettings.h
+    applicationsettings.h \
+    bootmanager.h \
+    imagemanager.h \
+    diskmanager.h \
+    windowsdiskutility.h
 
 
 SOURCES += main.cpp\
-    diskimager.cpp \
     linuxdiskmanager.cpp \
     odroidflashmanager.cpp \
     compressionmanager.cpp \
@@ -32,7 +35,9 @@ SOURCES += main.cpp\
     windowsdiskreaderthread.cpp \
     windowsdiskwriterthread.cpp \
     partitionfactory.cpp \
-    applicationsettings.cpp
+    applicationsettings.cpp \
+    bootmanager.cpp \
+    imagemanager.cpp
 
 win32 {
     DEFINES += VER=\"$${VERSTR}\"

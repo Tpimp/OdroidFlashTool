@@ -164,7 +164,7 @@ typedef  XU4_BOOT_TABLE U3_BOOT_TABLE; // U3 Boot table and Xu4 are identical
 
 #pragma pack()
 
-/*********************************************************************
+/********************************************************************************
  * Partition Factory is a bridge between the business and persistent
  * layers. For the most part, all the of logic contained is
  * related to persistent behavior - loading partition table data from
@@ -206,16 +206,17 @@ typedef  XU4_BOOT_TABLE U3_BOOT_TABLE; // U3 Boot table and Xu4 are identical
  *      // In most cases it is safe to assume anything prior to the FAT partition (boot)
  *      // should be included in this section
  *  </MBR>
- *  Next Simply Describe the /boot partition
+ *  Next Simply Describe the /boot (FAT16 or FAT32) partition
  *  <Boot>
- *      <Sector Start>0</Sector Start> // What sector does it start at
- *      <Sector End>512000</Sector End>  // Last valid Sector
+ *      <Type>16</Type>  // FAT 16 or FAT 32
+ *      <Sector Start>0</Sector Start>    // What sector does it start at
+ *      <Sector End>512000</Sector End>   // Last valid Sector
  *      <Boot Length>512000</Boot Length> // Length of Master Boot Section (in bytes)
  * </Boot>
  * </Other> // Other block describes paritions that are desired to be copied
  * </Other>
  *
- * *******************************************************************/
+ *****************************************************************************/
 
 
 class PartitionFactory : public QObject

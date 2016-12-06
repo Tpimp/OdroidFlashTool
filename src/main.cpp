@@ -22,7 +22,6 @@
 #endif
 
 #include <QGuiApplication>
-#include "diskimager.h"
 #include "applicationsettings.h"
 #include "odroidflashmanager.h"
 #include <QCommandLineParser>
@@ -30,7 +29,12 @@
 #include <QQmlContext>
 #include <QTranslator>
 #include <QtQml>
+#include "diskmanager.h"
+#ifdef Q_OS_WIN
+    #include "windowsdiskmanager.h"
+#else
 
+#endif
 int main(int argc, char *argv[])
 {
     QCommandLineParser parser;
@@ -49,9 +53,15 @@ int main(int argc, char *argv[])
         QQmlApplicationEngine graphical_engine(&app);
         QString reason("??");
         qmlRegisterUncreatableType<OdroidFlashManager>("com.odroid.odf",1,0,"FlashManager",reason);
+
         app.installTranslator(&translator);
-        DiskImager  *    dskimg = new DiskImager(&app);
-        dskimg->initializeDiskImager();
+        DiskManager  *    disk_manager;
+        #ifdef Q_OS_WIN
+            WindowsDiskManager* dm(new WindowsDiskManager(&app));
+            disk_manager = reinterpret_cast<DiskManager*>(dm);
+        #else
+
+        #endif
 
         QString pwd = app.applicationDirPath();
         ApplicationSettings   settings(&app);
@@ -65,7 +75,7 @@ int main(int argc, char *argv[])
         }
         else
             settings.loadSettings(pwd + "/settings.json");
-        OdroidFlashManager * flashmanager = new OdroidFlashManager(dskimg,&settings,pwd,&app);
+        OdroidFlashManager * flashmanager = new OdroidFlashManager(disk_manager,&settings,pwd,&app);
 
         graphical_engine.rootContext()->setContextProperty("ODF",flashmanager);
         graphical_engine.rootContext()->setContextProperty("AppSettings",&settings);

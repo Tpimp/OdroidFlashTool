@@ -4,239 +4,267 @@
 #include <io.h>
 #include <QStorageInfo>
 #include "partitionfactory.h"
+#include <QUrl>
 
-
-quint16 WindowsDiskManager::getDriveDetails(char drive_letter,HANDLE volume_handle,HANDLE & device_handle,DiskMap& disk_map, int &disk_number, quint64& drive_size, QString &error_str)
+WindowsDiskManager::WindowsDiskManager(QObject* parent) : DiskManager(parent)
 {
-    // Quite extensive lookup function - should be called as little as possible, with the caller working to maintain disk_details externally
 
-    // First get a list of the volume infos
+}
 
-    VOLUME_DISK_EXTENTS volumeDiskExtents;
-    DWORD dwBytesReturned = 0;
-    QList<PDISK_EXTENT>    disk_details;
-    DiskDescriptorInfo     disk_info;
-    BOOL bResult = DeviceIoControl(  volume_handle,
-                                     IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
-                                     NULL,
-                                     0,
-                                     &volumeDiskExtents,
-                                     sizeof(volumeDiskExtents),
-                                     &dwBytesReturned,
-                                     NULL);
-    if(!bResult)
+WindowsDiskManager::~WindowsDiskManager()
+{
+
+}
+
+void WindowsDiskManager::cancelCurrentOperation()
+{
+
+}
+
+
+QVariantList WindowsDiskManager::getCrumbPath(QString path)
+{
+    QStringList crumbs = path.split('/',QString::SkipEmptyParts);
+    QVariantList list;
+    QString current_path("");
+    foreach(const QString & str, crumbs)
     {
-        wchar_t *errormessage=NULL;
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
-        error_str = QString::fromUtf16((const ushort *)errormessage);
-        LocalFree(errormessage);
-        qDebug() << "Failed to fetch the volume information with handle: " << long(volume_handle);
-        return -1;
-    }
-
-    bool isFirst(true);
-
-    if(volumeDiskExtents.NumberOfDiskExtents == 0)
-    {
-        qDebug() << "Fetched volume information was empty with handle: " << long(volume_handle);
-        return -1;
-    }
-
-    // find the disk number
-    for (DWORD n = 0;  n < volumeDiskExtents.NumberOfDiskExtents;++n)
-    {
-        PDISK_EXTENT pDiskExtent =  &volumeDiskExtents.Extents[n];
-        disk_details.append(pDiskExtent);
-        if(isFirst)
+        QVariantList item;
+        item.append(QVariant::fromValue(str));
+        if(current_path.isEmpty())
+            current_path.append(str);
+        else
         {
-            disk_number = pDiskExtent->DiskNumber;
-            isFirst = false;
+            current_path.append('/');
+            current_path.append(str);
         }
+        item.append(QVariant::fromValue(QUrl::fromLocalFile(current_path)));
+        list.append(QVariant::fromValue(item));
     }
+    return list;
+}
 
 
+QString WindowsDiskManager::getSystemRootPath()
+{
+    QStorageInfo  root(QStorageInfo::root());
+    return root.rootPath();
+}
 
 
-    uint16_t bytes_per_sector(512);
-    MBR_TABLE   ebr_table;
-    // Get Partition table
-    QString device_name("\\\\.\\PhysicalDrive");
-    device_name.append(QString::number(disk_number));
+QString WindowsDiskManager::getSystemRootName()
+{
+    QStorageInfo  root(QStorageInfo::root());
+    return root.displayName();
+}
 
-    WriteChunk       MBR;
-    MBR.first = 0;
-    MBR.second = 1;
-    WriteChunk      FAT;
 
-    QFile  file(device_name);
-    if(!file.open(QIODevice::ReadOnly))
-        qDebug() << "Failed to open disk";
-    char  mbr_data[512];
-    quint64 bytes_read = file.read(mbr_data,512);
-    ebr_table.setData(mbr_data,bytes_read);
-    FAT.first = ebr_table.Record1.LBAAddress;
-    FAT.second = ebr_table.Record1.PartitionSectors;
-    file.close();
+QString WindowsDiskManager::getSystemRootUrl()
+{
+    QStorageInfo  root(QStorageInfo::root());
+    QString url("file:///");
+    url.append(root.rootPath());
+    return url;
+}
 
-    WriteChunk  linux_chunk;
-    linux_chunk.first = ebr_table.Record2.LBAAddress;
-    linux_chunk.second = ebr_table.Record2.PartitionSectors;
-   // free_space.first = (linux_chunk.first + linux_chunk.second);
 
-    DWORD spc,bps,freeclusters,totalclusters;
-    wchar_t drive_name[] = {drive_letter,':','\\','\0'};
-    BOOL result = GetDiskFreeSpace(drive_name,&spc,&bps,&freeclusters,&totalclusters);
-    if(result == 0)
+void WindowsDiskManager::loadBootFromDevice(QString drive_path)
+{
+    /*QString drive_letter(boot_ini_path.section("",0,2));
+    QStorageInfo  info(drive_letter);
+    if(info.isValid() && info.isReady())
     {
-        qDebug() << "Failed to get DiskFreeSpace";
-        wchar_t *errormessage=NULL;
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
-        qDebug() << "Error Message : " << QString::fromUtf16((const ushort *)errormessage);
-        LocalFree(errormessage);
+        QFile boot_file(boot_ini_path);
+        if(boot_file.exists())
+        {
+            boot_file.open(QIODevice::ReadOnly);
+            QByteArray boot_data(boot_file.readAll());
+            // dump to work directory
+            QString path_to_backup(mAppSettings->workDirectory());
+            path_to_backup.append(QDate::currentDate().toString());
+            path_to_backup.append("-boot.ini");
+            QFile backup_file(path_to_backup);
+            if(backup_file.open(QIODevice::WriteOnly))
+            {
+                backup_file.write(boot_data);
+                mAppSettings->setLastBackupBootIni(path_to_backup);
+                emit backedUpBootIni();
+            }
+            else
+                emit errorHappened(READING_BOOT,2,QStringLiteral("Failed to create backup file in work directory- ") + mAppSettings->workDirectory());
+        }
+        else
+            emit errorHappened(READING_BOOT,0,QStringLiteral("Cannot locate boot.ini for file path- ") + boot_ini_path);
     }
     else
+        emit errorHappened(READING_BOOT,1,QStringLiteral("Drive is not ready - check media storage in drive ") + drive_letter);
+     */
+    QByteArray settings;
+    emit finishedReadingBootSettings(settings);
+
+}
+
+ void WindowsDiskManager::mountDisk(QString disk_path)
+ {
+
+ }
+
+ void WindowsDiskManager::queryDevices(bool show_not_ready)
+ {
+     foreach (const QStorageInfo &storage, QStorageInfo::mountedVolumes())
+     {
+         if (storage.isValid()  && (storage.isReady() || show_not_ready) && !storage.isRoot())
+         {
+             if (!storage.isReadOnly())
+             {
+                 emit foundDevice(storage.displayName(),storage.rootPath());
+             }
+         }
+     }
+ }
+
+ void WindowsDiskManager::readingImageFinished(QString filename)
+ {
+
+ }
+
+ void WindowsDiskManager::startImageWrite(QString root_path, QString image_path, bool should_verify, bool write_partitions)
+ {
+    /* if(mDiskImager == nullptr)
+         return;
+
+     if(mRunningProcesses.length() > 0)
+         return; // something is running
+
+
+     if(mAppSettings->shouldCompress())
+     {
+         mCurrentProcess = DECOMPRESSING;
+         if(mAppSettings->verifyFlash())
+         {
+             mRunningProcesses.append(WRITING_IMAGE_VERIFY);
+         }
+         else
+         {
+             mRunningProcesses.append(WRITING_IMAGE);
+         }
+         startDecompression(mCurrentSource);
+     }
+     else
+     {
+         mWriterThread = new WriterThread(root_path,image_path,mAppSettings->usePartitionsOnly(),mAppSettings->verifyFlash());
+         connect(mWriterThread, &WriterThread::startingWritePartition, this, &OdroidFlashManager::startedReadPartitions);
+         connect(mWriterThread, &WriterThread::updateWriteSpeed, this, &OdroidFlashManager::writeCompleted);
+         connect(mWriterThread, &WriterThread::errorHappened,this,&OdroidFlashManager::processWriteErrors);
+         connect(mWriterThread, &WriterThread::finishedWritingImage,this,&OdroidFlashManager::writingImageFinished);
+         if(mAppSettings->verifyFlash())
+         {
+             mCurrentProcess = WRITING_IMAGE_VERIFY;
+             emit processStarted(WRITING_IMAGE_VERIFY);
+         }
+         else
+         {
+
+             mCurrentProcess = WRITING_IMAGE;
+             emit processStarted(WRITING_IMAGE);
+         }
+     }
+
+     if(mAppSettings->deleteAfterDecompress())
+     {
+         mRunningProcesses.append(DELETE_IMAGE);
+     }
+
+     mWriterThread->start(QThread::HighestPriority);*/
+ }
+
+void WindowsDiskManager::startReadImage(QString root_path, QString image_path, bool should_verify, bool read_partitions)
+{
+     //TODO re-write StartReadImage
+  /*  if(mDiskImager == nullptr)
+        return;
+
+    if(mRunningProcesses.length() > 0)
+        return; // something is running
+
+    mReaderThread = new ReaderThread(root_path,image_path,read_partitions,should_verify);
+    connect(mReaderThread, &ReaderThread::startingReadPartition, this, &OdroidFlashManager::startedReadPartitions);
+    connect(mReaderThread, &ReaderThread::updateReadSpeed, this, &OdroidFlashManager::readCompleted);
+    connect(mReaderThread, &ReaderThread::errorHappened,this,&OdroidFlashManager::processReadErrors);
+    connect(mReaderThread, &ReaderThread::finishedReadingImage,this,&OdroidFlashManager::readingImageFinished);
+    emit processStarted(READING_IMAGE);
+    mReaderThread->start(QThread::HighestPriority);*/
+}
+
+
+
+QVariantList WindowsDiskManager::temporaryCrumbs(QString temp_path)
+{
+    QStringList crumbs = temp_path.split('/',QString::SkipEmptyParts);
+    QVariantList list;
+    QString current_path("");
+    foreach(const QString & str, crumbs)
     {
-        drive_size = spc * bps * totalclusters;
-        //free_space = spc * bps * freeclusters;
-        bytes_per_sector = bps;
-    }
-    bool success = WindowsDiskManager::getRawDiskHandle(device_handle,disk_number,error_str);
-    if(!success)
-    {
-        qDebug() << "Failed to get device handle" << error_str;
-    }
-    else{
-        DISK_GEOMETRY_EX geometry;
-        DWORD bytes_returned;
-        bResult = DeviceIoControl(device_handle,IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,NULL,0,&geometry,sizeof(DISK_GEOMETRY_EX),&bytes_returned,NULL);
-        if(bResult != 0)
+        QVariantList item;
+        item.append(QVariant::fromValue(str));
+        if(current_path.isEmpty())
+            current_path.append(str);
+        else
         {
-            qDebug() << "Geometry: " << geometry.DiskSize.QuadPart;
-            drive_size = geometry.DiskSize.QuadPart;
-            bytes_per_sector = geometry.Geometry.BytesPerSector;
+            current_path.append('/');
+            current_path.append(str);
         }
+        item.append(QVariant::fromValue(QUrl::fromLocalFile(current_path)));
+        list.append(QVariant::fromValue(item));
     }
-
-    disk_info.volumeLength = drive_size;
-    disk_info.writeChunks.append(MBR);
-    disk_info.writeChunks.append(FAT);
-    disk_info.writeChunks.append(linux_chunk);
-
-    WriteChunk       free_space_partition;
-    free_space_partition.first = ( (linux_chunk.first +linux_chunk.second) * bytes_per_sector);
-    free_space_partition.second = (drive_size - free_space_partition.first);
-    disk_info.writeChunks.append(free_space_partition);
-
-    disk_map.insert(drive_letter,disk_info);
-
-    return bytes_per_sector;
-}
-
-
-bool WindowsDiskManager::getFileSize(QFile & file, QStorageInfo & image_drive, quint64 &file_size, quint64 &sector_size, quint64 & num_sectors,  QString &error_str)
-{
-    file_size =  file.size();
-    quint64 spaceneeded(0);
-    spaceneeded = (num_sectors +1)  *sector_size;
-    if (image_drive.bytesAvailable() <= spaceneeded)
-    {
-        spaceneeded = 0;
-        error_str = "Not enough room on the write disk to create image.";
-        return false;
-    }
-    return true;
+    return list;
 }
 
 
 
-bool WindowsDiskManager::getVolumeHandle(char drive_letter, QFile & volume_handle, QString & error_str, HANDLE & handle_to_set,QIODevice::OpenModeFlag mode)
+void WindowsDiskManager::unmountDisk(QString disk_path)
 {
 
-    char volumeName[8] = "";
-    const char* volumeFormat = "\\\\.\\%c:";
-    sprintf(volumeName, volumeFormat, drive_letter);
-    volume_handle.setFileName(volumeName);
-    if(!volume_handle.open(mode))
-    {
-        qDebug()<< "Failed to open volume with mode" << mode;
-        return false;
-    }
-    handle_to_set = HANDLE(_get_osfhandle(volume_handle.handle()));
-    if(handle_to_set == INVALID_HANDLE_VALUE)
-    {
-        wchar_t *errormessage=NULL;
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
-        error_str = QString::fromUtf16((const ushort *)errormessage);
-        LocalFree(errormessage);
-        return false;
-    }
-    return true;
 }
 
 
-bool WindowsDiskManager::lockVolume(HANDLE volume_handle, QString &error_str)
+void WindowsDiskManager::overwriteBootFile(QByteArray& boot_data,  QString drive_path) // TODO: defer to diskimager
 {
-    DWORD bytesreturned;
-    BOOL bResult(DeviceIoControl(volume_handle, FSCTL_LOCK_VOLUME, NULL, 0, NULL, 0, &bytesreturned, NULL));
-    if (!bResult)
+   /* QStorageInfo info(drive_path);
+    if(info.isValid()  && info.isReady())
     {
-        wchar_t *errormessage=NULL;
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
-        error_str = QString::fromUtf16((const ushort *)errormessage);
-        LocalFree(errormessage);
+        if(info.isReadOnly())
+        {
+            QFile boot_file(drive_path + "/boot/boot.ini");
+            if(boot_file.exists())
+            {
+                if(boot_file.open(QIODevice::WriteOnly))
+                {
+                    QFile boot_ini(boot_ini_path);
+                    if(boot_ini.exists())
+                    {
+                        boot_ini.open(QIODevice::ReadOnly);
+                        QByteArray boot_data(boot_ini.readAll());
+                        boot_file.write(boot_data);
+                        emit wroteBootIni();
+                    }
+                    else
+                       emit errorHappened(WRITING_BOOT,4,QStringLiteral("Cannot open boot.ini- ") + boot_ini_path);
+                }
+                else
+                    emit errorHappened(WRITING_BOOT,3,QStringLiteral("Cannot open boot file for write- ") + boot_file.fileName());
+            }
+            else
+                emit errorHappened(WRITING_BOOT,2,QStringLiteral("Cannot locate boot.ini on drive- ") + drive_path);
+        }
+        else
+            emit errorHappened(WRITING_BOOT,1,QStringLiteral("Drive mounted as read only- ") + drive_path);
     }
-    return bool(bResult);
-
+    else
+        emit errorHappened(WRITING_BOOT,0,QStringLiteral("Drive is invalid or not ready (Check media and remount)- ")+ drive_path);
+        */
 }
 
-bool WindowsDiskManager::getRawDiskHandle(HANDLE &disk_handle,int disk_number, QString &error_str,DWORD access )
-{
-    QString device_name("\\\\.\\");
-    device_name.append("PhysicalDrive");
-    device_name.append(QString::number(disk_number));
-
-    disk_handle = CreateFile(device_name.toStdWString().c_str(), access, FILE_SHARE_READ | FILE_SHARE_WRITE  , NULL, OPEN_EXISTING, FILE_FLAG_WRITE_THROUGH, NULL);
-    if (disk_handle == INVALID_HANDLE_VALUE)
-    {
-        wchar_t *errormessage=NULL;
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
-        error_str = QString::fromUtf16((const ushort *)errormessage);
-        LocalFree(errormessage);
-        return false;
-    }
-
-    return true;
-}
-
-bool WindowsDiskManager::unmountVolume(HANDLE volume_handle, char drive_letter, QString &error_str)
-{
-    DWORD junk;
-    BOOL bResult;
-    wchar_t drive_path[]= {'A',':','\0'};
-    drive_path[0] = drive_letter;
-    bResult = DeviceIoControl(volume_handle, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &junk, NULL);
-    DefineDosDevice(DDD_RAW_TARGET_PATH |DDD_REMOVE_DEFINITION  |DDD_EXACT_MATCH_ON_REMOVE,drive_path,drive_path);
-    if (!bResult)
-    {
-        wchar_t *errormessage=NULL;
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
-        error_str = QString::fromUtf16((const ushort *)errormessage);
-        LocalFree(errormessage);
-    }
-    return bool(bResult);
-}
-
-bool WindowsDiskManager::removeLock(HANDLE volume_handle, QString & error_str)
-{
-    DWORD junk;
-    BOOL bResult;
-    bResult = DeviceIoControl(volume_handle, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &junk, NULL);
-    if (!bResult)
-    {
-        wchar_t *errormessage=NULL;
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), 0, (LPWSTR)&errormessage, 0, NULL);
-        error_str = QString::fromUtf16((const ushort *)errormessage);
-        LocalFree(errormessage);
-    }
-    return bool(bResult);
-}
+/****************************************************************************
+ *Private Slots for internal Threads
+ ****************************************************************************/

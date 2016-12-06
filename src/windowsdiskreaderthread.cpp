@@ -74,7 +74,7 @@ void ReaderThread::performDiskCopy()
         if (bytes_read == 0)
         {
             QString error;
-            WindowsDiskManager::removeLock(mVolumeHandle,error);
+            removeLock(mVolumeHandle,error);
 
             //emit error(tr("Write Error") + " : REACHED A NULL SECTOR in Reading before expected end");
             return;
@@ -111,9 +111,9 @@ void ReaderThread::performVolumeCopy()
     QByteArray FILE_CACHE;
     int bytes_cached(0);
     QString error_str;
-    if(!WindowsDiskManager::unmountVolume(mVolumeHandle,mDiskPath.at(0).toLatin1(),error_str))
+    if(!unmountVolume(mVolumeHandle,mDiskPath.at(0).toLatin1(),error_str))
     {
-        WindowsDiskManager::removeLock(mVolumeHandle,error_str);
+        removeLock(mVolumeHandle,error_str);
         emit finishedReadingImage(mImagePath);
         return;
     }

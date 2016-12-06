@@ -6,10 +6,10 @@
 #include "applicationsettings.h"
 
 
-OdroidFlashManager::OdroidFlashManager(DiskImager *dskimg,ApplicationSettings* settings, QString application_dir, QObject *parent) : QObject(parent),
-    mDiskImager(dskimg), mAppSettings(settings), mApplicationDir(application_dir)
+OdroidFlashManager::OdroidFlashManager(DiskManager *disk_manager,ApplicationSettings* settings, QString application_dir, QObject *parent) : QObject(parent),
+    mDiskManager(disk_manager), mAppSettings(settings), mApplicationDir(application_dir)
 {
-    if(mDiskImager)
+    if(mDiskManager)
     {
         //connect(mDiskImager, &DiskImager::readCompleted, this, &OdroidFlashManager::readCompleted);
     }
@@ -19,67 +19,53 @@ OdroidFlashManager::OdroidFlashManager(DiskImager *dskimg,ApplicationSettings* s
     }
 }
 
-void OdroidFlashManager::backupBootIni(QString boot_ini_path, DeviceID id)
+void OdroidFlashManager::requestBackupBootFile(QString boot_file_path, QString disk_path)
 {
-    QString drive_letter(boot_ini_path.section("",0,2));
-    QStorageInfo  info(drive_letter);
-    if(info.isValid() && info.isReady())
+    if(!mDiskManager->checkDiskMounted(disk_path))
     {
-        QFile boot_file(boot_ini_path);
-        if(boot_file.exists())
-        {
-            boot_file.open(QIODevice::ReadOnly);
-            QByteArray boot_data(boot_file.readAll());
-            // dump to work directory
-            QString path_to_backup(mAppSettings->workDirectory());
-            path_to_backup.append(QDate::currentDate().toString());
-            path_to_backup.append("-boot.ini");
-            QFile backup_file(path_to_backup);
-            if(backup_file.open(QIODevice::WriteOnly))
-            {
-                backup_file.write(boot_data);
-                mAppSettings->setLastBackupBootIni(path_to_backup);
-                emit backedUpBootIni();
-            }
-            else
-                emit errorHappened(READING_BOOT,2,QStringLiteral("Failed to create backup file in work directory- ") + mAppSettings->workDirectory());
-        }
-        else
-            emit errorHappened(READING_BOOT,0,QStringLiteral("Cannot locate boot.ini for file path- ") + boot_ini_path);
+        mCurrentProcess = READING_BOOT;
+        mDiskManager->mountDisk(disk_path);
+        return;
+    }
+
+    if(mCurrentProcess == WAITING_PROCESS)
+    {
+        mCurrentProcess = READING_BOOT;
+        mDiskManager->loadBootFromDevice(disk_path);
     }
     else
-        emit errorHappened(READING_BOOT,1,QStringLiteral("Drive is not ready - check media storage in drive ") + drive_letter);
+        emit errorHappened(READING_BOOT,4,QStringLiteral("System Busy - Cannot read boot at this time."));
 }
 
 
 void OdroidFlashManager::startCompression(QString image_path)
 {
-    if(mCompressionThread)
+    /*if(mCompressionThread)
         return;
     mCompressionThread = new CompressionThread(image_path,mAppSettings->workDirectory(), mApplicationDir + QStringLiteral("/3rdparty/7zip/7zr.exe"));
     connect(mCompressionThread, &CompressionThread::compressionProgress,this,&OdroidFlashManager::compressionCompleted);
     connect(mCompressionThread, &CompressionThread::finishedCompression,this,&OdroidFlashManager::compressionFinished);
     mRunningProcesses.append(COMPRESSING);
     mCompressionThread->start();
-    emit processStarted(COMPRESSING);
+    emit processStarted(COMPRESSING);*/
 }
 
 void OdroidFlashManager::startDecompression(QString archive_path)
 {
-    if(mDecompressThread)
+    /*if(mDecompressThread)
         return;
     mDecompressThread = new DecompressionThread(archive_path,mApplicationDir,mAppSettings->workDirectory());
     connect(mDecompressThread, &DecompressionThread::decompressionProgress,this,&OdroidFlashManager::decompressionComplete);
     connect(mDecompressThread, &DecompressionThread::finishedDecompression,this,&OdroidFlashManager::decompressionFinished);
     mRunningProcesses.append(DECOMPRESSING);
     mDecompressThread->start();
-    emit processStarted(DECOMPRESSING);
+    emit processStarted(DECOMPRESSING);*/
 }
 
 
 void OdroidFlashManager::cancelCurrentOperations()
 {
-    switch(mCurrentProcess)
+    /*switch(mCurrentProcess)
     {
         case DECOMPRESSING:
         {
@@ -111,111 +97,84 @@ void OdroidFlashManager::cancelCurrentOperations()
         }
         default: break;
     }
-    mRunningProcesses.clear();
+    mRunningProcesses.clear();*/
 }
 
-void OdroidFlashManager::compressionFinished(QString file_out)
+void OdroidFlashManager::loadBootFromFile(QString boot_file_path)
 {
-    disconnect(mCompressionThread, 0,this,0);
+
+}
+
+void OdroidFlashManager::loadBootFromDevice(QString disk_path)
+{
+
+}
+
+//void OdroidFlashManager::compressionFinished(QString file_out)
+//{
+    /*disconnect(mCompressionThread, 0,this,0);
     mCompressionThread->deleteLater();
     mCompressionThread = nullptr;
     mRunningProcesses.removeAll(COMPRESSING);
     mCurrentTarget = file_out;
-    emit processFinished(COMPRESSING,file_out);
-}
+    emit processFinished(COMPRESSING,file_out);*/
+//}
 
-void OdroidFlashManager::decompressionFinished(QString file_out)
-{
-    disconnect(mDecompressThread, 0,this,0);
+//void OdroidFlashManager::decompressionFinished(QString file_out)
+//{
+    /*disconnect(mDecompressThread, 0,this,0);
     mDecompressThread->deleteLater();
     mDecompressThread = nullptr;
     mCurrentSource = file_out;
     mRunningProcesses.removeAll(DECOMPRESSING);
-    emit processFinished(DECOMPRESSING,file_out);
-}
+    emit processFinished(DECOMPRESSING,file_out);*/
+//}
 
 QVariantList OdroidFlashManager::getCrumbPath(QString path)
 {
-    QStringList crumbs = path.split('/',QString::SkipEmptyParts);
-    QVariantList list;
-    QString current_path("");
-    foreach(const QString & str, crumbs)
-    {
-        QVariantList item;
-        item.append(QVariant::fromValue(str));
-        if(current_path.isEmpty())
-            current_path.append(str);
-        else
-        {
-            current_path.append('/');
-            current_path.append(str);
-        }
-        item.append(QVariant::fromValue(QUrl::fromLocalFile(current_path)));
-        list.append(QVariant::fromValue(item));
-    }
-    return list;
+   return mDiskManager->getCrumbPath(path);
 }
 
 QString OdroidFlashManager::getSystemRootName()
 {
-    QStorageInfo  root(QStorageInfo::root());
-    return root.displayName();
+    return mDiskManager->getSystemRootName();
 }
 
 QString OdroidFlashManager::getSystemRootPath()
 {
-    QStorageInfo  root(QStorageInfo::root());
-    return root.rootPath();
+    return mDiskManager->getSystemRootPath();
 }
 
 QString OdroidFlashManager::getSystemRootUrl()
 {
-    QStorageInfo  root(QStorageInfo::root());
-    QString url("file:///");
-    url.append(root.rootPath());
-    return url;
+    return mDiskManager->getSystemRootUrl();
 }
 
-void OdroidFlashManager::processReadErrors(ReaderThread::ReaderError error, QString error_str)
-{
-
-}
-
-void OdroidFlashManager::processWriteErrors(WriterThread::WriteError error, QString error_str)
-{
-
-}
 
 void OdroidFlashManager::queryMountedDevices()
 {
-    bool use_not_ready = mAppSettings->showNotReadyDisks();
-    foreach (const QStorageInfo &storage, QStorageInfo::mountedVolumes())
-    {
-        if (storage.isValid()  && (storage.isReady() || use_not_ready) && !storage.isRoot())
-        {
-            if (!storage.isReadOnly())
-            {
-                emit foundMountedDevice(storage.displayName(),storage.rootPath());
-            }
-        }
-    }
+    mDiskManager->queryDevices(mAppSettings->showNotReadyDisks());
 }
 
 
-void OdroidFlashManager::readingImageFinished(QString filename)
-{
-    disconnect(mReaderThread, 0,this,0);
+//void OdroidFlashManager::readingImageFinished(QString filename)
+//{
+    /*disconnect(mReaderThread, 0,this,0);
     mReaderThread->deleteLater();
     mReaderThread = nullptr;
     mRunningProcesses.removeAll(READING_IMAGE);
-    emit processFinished(READING_IMAGE, filename);
-}
+    emit processFinished(READING_IMAGE, filename);*/
+//}
 
-void OdroidFlashManager::restoreLastBootBackup(QString drive_path)
+//void OdroidFlashManager::restoreLastBootBackup(QString drive_path)
+//{
+    //writeBootIni(mAppSettings->lastBootIniBackup(),drive_path);
+//}
+
+void OdroidFlashManager::restoreBackupFile(QString disk_path)
 {
-    writeBootIni(mAppSettings->lastBootIniBackup(),drive_path);
-}
 
+}
 
 void OdroidFlashManager::startProcedure()
 {
@@ -224,52 +183,7 @@ void OdroidFlashManager::startProcedure()
 
 void OdroidFlashManager::startImageWrite(QString root_path, QString image_path, bool should_verify, bool write_partitions)
 {
-    if(mDiskImager == nullptr)
-        return;
-
-    if(mRunningProcesses.length() > 0)
-        return; // something is running
-
-
-    if(mAppSettings->shouldCompress())
-    {
-        mCurrentProcess = DECOMPRESSING;
-        if(mAppSettings->verifyFlash())
-        {
-            mRunningProcesses.append(WRITING_IMAGE_VERIFY);
-        }
-        else
-        {
-            mRunningProcesses.append(WRITING_IMAGE);
-        }
-        startDecompression(mCurrentSource);
-    }
-    else
-    {
-        mWriterThread = new WriterThread(root_path,image_path,mAppSettings->usePartitionsOnly(),mAppSettings->verifyFlash());
-        connect(mWriterThread, &WriterThread::startingWritePartition, this, &OdroidFlashManager::startedReadPartitions);
-        connect(mWriterThread, &WriterThread::updateWriteSpeed, this, &OdroidFlashManager::writeCompleted);
-        connect(mWriterThread, &WriterThread::errorHappened,this,&OdroidFlashManager::processWriteErrors);
-        connect(mWriterThread, &WriterThread::finishedWritingImage,this,&OdroidFlashManager::writingImageFinished);
-        if(mAppSettings->verifyFlash())
-        {
-            mCurrentProcess = WRITING_IMAGE_VERIFY;
-            emit processStarted(WRITING_IMAGE_VERIFY);
-        }
-        else
-        {
-
-            mCurrentProcess = WRITING_IMAGE;
-            emit processStarted(WRITING_IMAGE);
-        }
-    }
-
-    if(mAppSettings->deleteAfterDecompress())
-    {
-        mRunningProcesses.append(DELETE_IMAGE);
-    }
-
-    mWriterThread->start(QThread::HighestPriority);
+   mDiskManager->startImageWrite(root_path,image_path,should_verify,write_partitions);
 }
 
 void OdroidFlashManager::startNextProcess()
@@ -280,44 +194,15 @@ void OdroidFlashManager::startNextProcess()
 
 void OdroidFlashManager::startReadImage(QString root_path, QString image_path, bool should_verify, bool read_partitions)
 {
-    if(mDiskImager == nullptr)
-        return;
-
-    if(mRunningProcesses.length() > 0)
-        return; // something is running
-
-    mReaderThread = new ReaderThread(root_path,image_path,read_partitions,should_verify);
-    connect(mReaderThread, &ReaderThread::startingReadPartition, this, &OdroidFlashManager::startedReadPartitions);
-    connect(mReaderThread, &ReaderThread::updateReadSpeed, this, &OdroidFlashManager::readCompleted);
-    connect(mReaderThread, &ReaderThread::errorHappened,this,&OdroidFlashManager::processReadErrors);
-    connect(mReaderThread, &ReaderThread::finishedReadingImage,this,&OdroidFlashManager::readingImageFinished);
-    emit processStarted(READING_IMAGE);
-    mReaderThread->start(QThread::HighestPriority);
+    mDiskManager->startReadImage(root_path,image_path,should_verify, read_partitions);
 }
 
 
 
 QVariantList OdroidFlashManager::temporaryCrumbs()
 {
-    QString temp_path = mAppSettings->workDirectory();
-    QStringList crumbs = temp_path.split('/',QString::SkipEmptyParts);
-    QVariantList list;
-    QString current_path("");
-    foreach(const QString & str, crumbs)
-    {
-        QVariantList item;
-        item.append(QVariant::fromValue(str));
-        if(current_path.isEmpty())
-            current_path.append(str);
-        else
-        {
-            current_path.append('/');
-            current_path.append(str);
-        }
-        item.append(QVariant::fromValue(QUrl::fromLocalFile(current_path)));
-        list.append(QVariant::fromValue(item));
-    }
-    return list;
+
+    return mDiskManager->temporaryCrumbs(mAppSettings->workDirectory());
 }
 
 QUrl OdroidFlashManager::temporaryUrl()
@@ -622,47 +507,75 @@ void OdroidFlashManager::updateProcessView()
 }
 
 
-void OdroidFlashManager::writeBootIni(QString boot_ini_path, QString drive_path)
+void OdroidFlashManager::writeMemoryToBootFile(QString disk_path, QString device_format)
 {
-    QStorageInfo info(drive_path);
-    if(info.isValid()  && info.isReady())
-    {
-        if(info.isReadOnly())
-        {
-            QFile boot_file(drive_path + "/boot/boot.ini");
-            if(boot_file.exists())
-            {
-                if(boot_file.open(QIODevice::WriteOnly))
-                {
-                    QFile boot_ini(boot_ini_path);
-                    if(boot_ini.exists())
-                    {
-                        boot_ini.open(QIODevice::ReadOnly);
-                        QByteArray boot_data(boot_ini.readAll());
-                        boot_file.write(boot_data);
-                        emit wroteBootIni();
-                    }
-                    else
-                       emit errorHappened(WRITING_BOOT,4,QStringLiteral("Cannot open boot.ini- ") + boot_ini_path);
-                }
-                else
-                    emit errorHappened(WRITING_BOOT,3,QStringLiteral("Cannot open boot file for write- ") + boot_file.fileName());
-            }
-            else
-                emit errorHappened(WRITING_BOOT,2,QStringLiteral("Cannot locate boot.ini on drive- ") + drive_path);
-        }
-        else
-            emit errorHappened(WRITING_BOOT,1,QStringLiteral("Drive mounted as read only- ") + drive_path);
-    }
-    else
-        emit errorHappened(WRITING_BOOT,0,QStringLiteral("Drive is invalid or not ready (Check media and remount)- ")+ drive_path);
+
 }
 
-void OdroidFlashManager::writingImageFinished()
+
+
+void OdroidFlashManager::writeBootFromFile(QString boot_ini_path, QString drive_path) // TODO: defer to diskimager
 {
-    disconnect(mWriterThread, 0,this,0);
-    mWriterThread->deleteLater();
-    mWriterThread = nullptr;
-    mRunningProcesses.removeAll(WRITING_IMAGE);
-    emit processFinished(WRITING_IMAGE);
+   // load boot_file
+   QFile  boot_ini(boot_ini_path);
+   boot_ini.open(QIODevice::ReadOnly);
+   QByteArray   boot_settings(boot_ini.readAll());
+   mDiskManager->overwriteBootFile(boot_settings,drive_path);
 }
+
+
+/*****************************************************************************
+*  ## Start of private methods attached to DiskManager
+******************************************************************************/
+
+void OdroidFlashManager::processBootSettingRecieved(QByteArray& settings)
+{
+
+}
+
+void OdroidFlashManager::processBootSettingsWritten(QString disk_path)
+{
+
+}
+
+void OdroidFlashManager::processBootSettingsNotFound(int error, QString& error_str)
+{
+
+}
+void OdroidFlashManager::processDiskError(DiskManager::ImagerState state,QString error)
+{
+
+}
+void OdroidFlashManager::processDiskFinished(DiskManager::ImagerState state)
+{
+
+}
+
+void OdroidFlashManager::processDiskMounted(QString disk_path)
+{
+
+}
+
+void OdroidFlashManager::processDiskStarted(DiskManager::ImagerState state)
+{
+
+}
+
+void OdroidFlashManager::processDiskUnmounted(QString disk_path)
+{
+
+}
+
+void OdroidFlashManager::processFoundDevice(QString device, QString device_path)
+{
+
+}
+
+//void OdroidFlashManager::writingImageFinished()
+//{
+//    disconnect(mWriterThread, 0,this,0);
+//    mWriterThread->deleteLater();
+//    mWriterThread = nullptr;
+//    mRunningProcesses.removeAll(WRITING_IMAGE);
+//    emit processFinished(WRITING_IMAGE);
+//}

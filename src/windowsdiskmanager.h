@@ -5,56 +5,84 @@
 #endif
 
 
-#include <QFileInfo>
-#include <QDirIterator>
-#include <cstdio>
-#include <cstdlib>
-#include <windows.h>
-#include <winioctl.h>
-#include <dbt.h>
-#include <shlobj.h>
-#include <iostream>
-#include <sstream>
+
+
+
 #include <QTimer>
 #include "md5.h"
-#include <QStorageInfo>
-#include <QString>
-#include <QMap>
-#include <QList>
-#include <QPair>
-typedef QPair<quint64,quint64> WriteChunk;
-typedef QList<WriteChunk> WriteList;
+#include <QObject>
 
-typedef struct DiskDescriptorInfo
+#include "diskmanager.h"
+
+
+
+class WindowsDiskManager : public DiskManager
 {
-    quint64    volumeLength;
-    QString    volumeGUID;
-    WriteList  writeChunks;
-    quint64    bytesAvailable;
-    quint64    bytesFree;
-    quint64    totalBytes;
-}Disk_Descriptor_Info, *PDisk_Descriptor_Info;
-
-typedef QMap<char, DiskDescriptorInfo> DiskMap;
-
-//TODO: Add a static method for dismounting the drive, and a method to remount a drive
-
-class WindowsDiskManager
-{
+    Q_OBJECT
 public:
 
-    static quint16 getDriveDetails(char drive_letter, HANDLE volume_handle, HANDLE &device_handle, DiskMap &disk_map, int &disk_number, quint64& drive_size, QString & error_str);
-    static bool    getVolumeHandle(char drive_letter, QFile & volume_handle, QString &error_str, HANDLE &handle_to_set,QIODevice::OpenModeFlag mode = QIODevice::ReadOnly);
-    static bool    lockVolume(HANDLE volume_handle, QString &error_str);
-    static bool    unmountVolume(HANDLE volume_handle, char drive_letter, QString &error_str);
-    static bool    removeLock(HANDLE volume_handle, QString & error_str);
-    static bool    getRawDiskHandle(HANDLE & disk_handle, int disk_number, QString &error_str,DWORD access = FILE_SHARE_READ);
-    static bool    getFileSize(QFile & file_handle, QStorageInfo & image_drive, quint64 &file_size, quint64 &sector_size, quint64 & num_sectors,  QString &error_str);
+    WindowsDiskManager(QObject *parent = 0);
+    ~WindowsDiskManager();
+    bool checkDiskMounted(QString disk_path){
+        if(mMountedToDrive && (mMountedPath.compare(disk_path) == 0))
+        {
+            return true;
+        }
+        return false;
+    }
+    ImagerState getState()
+    {
+        return mCurrentState;
+    }
+
+signals:
+/***************************************************************************************************
+ * Signal inherited from DiskManager
+    void  bootSettingsNotFound(int error, QString& error_str);
+    void  errorOccured(ImagerState state,QString error);   // Important for anything...
+    void  finishedReadingBootSettings(QByteArray& settings); // Got your boot settings...
+    void  finishedWritingBootSettings(QString drive_path);   // Set your boot settings...
+    void  foundDevice(QString device, QString device_path);  // in response to query...
+    void  mountedDisk(QString disk_path);
+    void  processCompleted(int percentage, QString speed);
+    void  processFinished(ImagerState state);  // Finished some state - what next? - READY...
+    void  processStarted(ImagerState state);   // Hey! Im going to start doing something now,...
+    void  unmountedDisk(QString disk_path);    // All finished with the unmount process on....
+****************************************************************************************************/
+    // add Windows specific signals
+
+public slots:
+    void loadBootFromDevice(QString drive_path);  // Loads the bootfile into memory (finishedReadingBootSettings signal)
+    void overwriteBootFile(QByteArray& boot_data,  QString drive_path); // Overwrites the file on device with data passed
+
+    // Direct Drive Methods
+    void mountDisk(QString disk_path);  // Attempt to mount the device located @
+    void unmountDisk(QString disk_path); // Attempt to unmount the device located @
+    void queryDevices(bool show_not_ready); // Search for some devices
+
+    // Higher Level Flash Control Methods
+    void cancelCurrentOperation(); // Quit what you are doing and clean up if possible, user was already warned!
+    // better be mounted and ready to startImageWrite or startReadImage
+    void startImageWrite(QString root_path, QString image_path, bool should_verify, bool write_partitions);
+    void startReadImage(QString root_path, QString image_path, bool should_verify, bool read_partitions);
+
+
+    // File system (cookie crumb) helpers
+    QVariantList temporaryCrumbs(QString temp_path);
+    QVariantList getCrumbPath(QString path);
+    QString getSystemRootPath();
+    QString getSystemRootName();
+    QString getSystemRootUrl();
 
 private:// windows specific members (windows handles,...)
 
-    explicit WindowsDiskManager(){}
-    ~WindowsDiskManager(){}
+    // Internal Functions to perform DiskManager methods on Windows
+    ImagerState   mCurrentState = NOT_READY_STATE;
+    bool          mMountedToDrive = false;
+    QString mMountedPath;
+
+private slots:
+    void readingImageFinished(QString filename);
 };
 
 #endif // WINDOWSDISKMANAGER_H

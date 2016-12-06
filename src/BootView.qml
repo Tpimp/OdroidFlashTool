@@ -6,10 +6,10 @@ Rectangle {
     property alias bootStatus:bootStatusText
     Text{
         id:displayText
-        anchors.right:bootSettingsButton.left
-        anchors.rightMargin:8
+        anchors.right:parent.right
+        anchors.rightMargin:4
         anchors.top:parent.top
-        horizontalAlignment: Text.AlignLeft
+        horizontalAlignment: Text.AlignRight
         verticalAlignment: Text.AlignVCenter
         text:"Boot Settings"
         font.pixelSize:18
@@ -28,7 +28,7 @@ Rectangle {
         width: parent.width * .75
         anchors.bottom: parent.bottom
         anchors.right: bootSettingsButton.left
-        anchors.rightMargin: 6
+        anchors.rightMargin: 4
         Text{
             id:bootStatusText
             color:"white"
@@ -74,17 +74,17 @@ Rectangle {
         id:bootSettingsButton
         anchors.bottom:parent.bottom
         anchors.right: parent.right
-        anchors.rightMargin:6
-        anchors.bottomMargin: 6
-        height:42
-        width:42
-        radius:8
+        anchors.rightMargin:5
+        anchors.bottomMargin:2
+        height:32
+        width:32
+        radius:6
         color:"black"
         border.width: 0
         buttonImage:Image{
             anchors.centerIn: parent
-            height:42
-            width:42
+            height:32
+            width:32
             source:"/images/boot.png"
             fillMode: Image.PreserveAspectFit
             Component.onCompleted: parent = bootSettingsButton;

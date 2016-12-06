@@ -2,13 +2,14 @@
 #define WINDOWSDISKREADERTHREAD_H
 
 #include <QObject>
-#include "windowsdiskmanager.h"
 #include <QGuiApplication>
 #include <QStorageInfo>
 #include <QFile>
 #include <io.h>
+#include <QTimer>
 #include <QThread>
 #include <QDebug>
+#include "windowsdiskutility.h"
 
 using namespace std;
 class ReaderThread : public QThread
@@ -28,7 +29,7 @@ public:
 
 
         // Get Volume Handle
-        if(!WindowsDiskManager::getVolumeHandle(mDiskPath.at(0).toLatin1(),mVolumeFile,error_str,mVolumeHandle,QIODevice::ReadWrite))
+        if(!getVolumeHandle(mDiskPath.at(0).toLatin1(),mVolumeFile,error_str,mVolumeHandle,QIODevice::ReadWrite))
         {
             mDataSector = nullptr;
             emit finishedReadingImage(mImagePath);
@@ -38,12 +39,12 @@ public:
 
 
         int disk_number;
-        mReadSectorSize = WindowsDiskManager::getDriveDetails(mDiskPath.at(0).toLatin1(),mVolumeHandle,mRawDiskHandle,mDiskMap,disk_number,mBytesToWrite,error_str);
+        mReadSectorSize = getDriveDetails(mDiskPath.at(0).toLatin1(),mVolumeHandle,mRawDiskHandle,mDiskMap,disk_number,mBytesToWrite,error_str);
         mReadBufferSize = (16*mReadSectorSize);
         mDataSector = new char[mReadBufferSize +1];
         mDataSector[mReadBufferSize ] = '\0';
 
-        if(!WindowsDiskManager::lockVolume(mVolumeHandle,error_str))
+        if(!lockVolume(mVolumeHandle,error_str))
         {
             emit finishedReadingImage(mImagePath);
             return;
@@ -59,7 +60,7 @@ public:
         {
             delete [] mDataSector;
             mDataSector = nullptr;
-            WindowsDiskManager::removeLock(mVolumeHandle,error_str);
+            removeLock(mVolumeHandle,error_str);
             mImageFile.close();
             mVolumeHandle = INVALID_HANDLE_VALUE;
             //error(tr("Write Error") + " : Failed to lock volume " + mImagePath);
@@ -71,7 +72,7 @@ public:
         {
             delete [] mDataSector;
             mDataSector = nullptr;
-            WindowsDiskManager::removeLock(mVolumeHandle,error_str);
+            removeLock(mVolumeHandle,error_str);
             mImageFile.close();
             mVolumeHandle = INVALID_HANDLE_VALUE;
             mImageHandle = INVALID_HANDLE_VALUE;
@@ -128,7 +129,7 @@ public:
         mSpeedTimer->stop();
         disconnect(mSpeedTimer,0,0,0);
         delete mSpeedTimer;
-        WindowsDiskManager::removeLock(mVolumeHandle,error_str);
+        removeLock(mVolumeHandle,error_str);
         mImageFile.close();
         mVolumeFile.close();
         mVolumeHandle = INVALID_HANDLE_VALUE;

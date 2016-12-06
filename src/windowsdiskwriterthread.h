@@ -3,14 +3,14 @@
 
 
 #include <QObject>
-#include "windowsdiskmanager.h"
 #include <QGuiApplication>
 #include <QStorageInfo>
 #include <QFile>
 #include <io.h>
 #include <Fcntl.h>
 #include <QThread>
-
+#include "partitionfactory.h"
+#include "windowsdiskutility.h"
 class WriterThread : public QThread
 {
     Q_OBJECT
@@ -71,13 +71,13 @@ public:
         }
 
         // create a handle to the disk volume
-        if(!WindowsDiskManager::getVolumeHandle(mDiskPath.at(0).toLatin1(),mVolumeFile,error_str,mVolumeHandle, QIODevice::WriteOnly))
+        if(!getVolumeHandle(mDiskPath.at(0).toLatin1(),mVolumeFile,error_str,mVolumeHandle, QIODevice::WriteOnly))
         {
             mDataSector = nullptr;
             emit finishedWritingImage();
             return;
         }
-        if(!WindowsDiskManager::lockVolume(mVolumeHandle,error_str))
+        if(!lockVolume(mVolumeHandle,error_str))
         {
             mDataSector = nullptr;
             emit finishedWritingImage();
@@ -87,7 +87,7 @@ public:
 
         int disk_number;
         quint64 disk_size;
-        mReadSectorSize = WindowsDiskManager::getDriveDetails(write_drive.rootPath().at(0).toLatin1(),mVolumeHandle,mRawDiskHandle,mDiskMap, disk_number,disk_size, error_str);
+        mReadSectorSize = getDriveDetails(write_drive.rootPath().at(0).toLatin1(),mVolumeHandle,mRawDiskHandle,mDiskMap, disk_number,disk_size, error_str);
         if(mImageFile.size() > disk_size)// check that the image file is not larger than storage medium (writing 8GB image to 4GB microSD)
         {
             // error - write device does not have enough space
@@ -96,21 +96,21 @@ public:
             emit finishedWritingImage();
             return;
         }
-        if(!WindowsDiskManager::getRawDiskHandle(mRawDiskHandle,disk_number,error_str, FILE_SHARE_READ | FILE_SHARE_WRITE))
+        if(!getRawDiskHandle(mRawDiskHandle,disk_number,error_str, FILE_SHARE_READ | FILE_SHARE_WRITE))
         {
 
             mDataSector = nullptr;
-            WindowsDiskManager::removeLock(mVolumeHandle,error_str);
+            removeLock(mVolumeHandle,error_str);
             mImageFile.close();
             mVolumeHandle = INVALID_HANDLE_VALUE;
             mImageHandle = INVALID_HANDLE_VALUE;
             emit finishedWritingImage();
             return;
         }
-        if(!WindowsDiskManager::unmountVolume(mVolumeHandle,mDiskPath.at(0).toLatin1(),error_str))
+        if(!unmountVolume(mVolumeHandle,mDiskPath.at(0).toLatin1(),error_str))
         {
             mDataSector = nullptr;
-            WindowsDiskManager::removeLock(mVolumeHandle,error_str);
+            removeLock(mVolumeHandle,error_str);
             emit finishedWritingImage();
             return;
         }
@@ -143,7 +143,7 @@ public:
         // clean up and finish out
         delete [] mDataSector;
         mDataSector = nullptr;
-        WindowsDiskManager::removeLock(mVolumeHandle,error_str);
+        removeLock(mVolumeHandle,error_str);
         mImageFile.close();
         mVolumeFile.close();
         mVolumeHandle = INVALID_HANDLE_VALUE;
